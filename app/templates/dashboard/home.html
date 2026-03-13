@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — MedBridge RCM{% endblock %}
+{% block content %}
+
+<!-- Page header -->
+<div class="mb-8">
+  <h1 class="text-2xl font-semibold text-gray-900">Dashboard</h1>
+  <p class="text-gray-500 text-sm mt-1">Good to see you, {{ current_user.first_name }}.</p>
+</div>
+
+<!-- Stat cards -->
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+  {% set stats = [
+    ('Total Auths', total_auths, 'teal', 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414A1 1 0 0119 9v11a2 2 0 01-2 2z'),
+    ('Pending', pending_auths, 'yellow', 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z'),
+    ('Approved', approved_auths, 'green', 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'),
+    ('Denied', denied_auths, 'red', 'M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z'),
+  ] %}
+  {% for label, value, color, icon in stats %}
+  <div class="bg-white rounded-xl border border-gray-200 p-5">
+    <div class="flex items-center justify-between mb-3">
+      <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">{{ label }}</span>
+      <div class="w-8 h-8 rounded-lg bg-{{ color }}-50 flex items-center justify-center">
+        <svg class="w-4 h-4 text-{{ color }}-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ icon }}"/>
+        </svg>
+      </div>
+    </div>
+    <p class="text-3xl font-semibold text-gray-900">{{ value }}</p>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Second row: approval rate + patients -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
+
+  <!-- Approval Rate -->
+  <div class="bg-white rounded-xl border border-gray-200 p-6">
+    <p class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">Approval Rate</p>
+    <div class="flex items-end gap-2 mb-3">
+      <span class="text-4xl font-bold text-teal-600">{{ approval_rate }}%</span>
+      <span class="text-sm text-gray-400 mb-1">first-pass</span>
+    </div>
+    <div class="w-full bg-gray-100 rounded-full h-2">
+      <div class="bg-teal-500 h-2 rounded-full" style="width: {{ approval_rate }}%"></div>
+    </div>
+  </div>
+
+  <!-- Patients -->
+  <div class="bg-white rounded-xl border border-gray-200 p-6">
+    <p class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">Patients</p>
+    <p class="text-4xl font-bold text-gray-900 mb-1">{{ total_patients }}</p>
+    <a href="{{ url_for('patient.new_patient') }}"
+       class="text-sm text-teal-600 hover:underline">+ Add patient</a>
+  </div>
+
+  <!-- Quick actions -->
+  <div class="bg-teal-600 rounded-xl p-6 text-white">
+    <p class="text-xs font-medium text-teal-200 uppercase tracking-wide mb-3">Quick actions</p>
+    <div class="space-y-2">
+      <a href="{{ url_for('prior_auth.new_auth') }}"
+         class="flex items-center gap-2 text-sm font-medium hover:text-teal-200 transition-colors">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+        </svg>
+        New prior auth request
+      </a>
+      <a href="{{ url_for('patient.new_patient') }}"
+         class="flex items-center gap-2 text-sm font-medium hover:text-teal-200 transition-colors">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+        </svg>
+        Add new patient
+      </a>
+      <a href="{{ url_for('denial.list_denials') }}"
+         class="flex items-center gap-2 text-sm font-medium hover:text-teal-200 transition-colors">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+        </svg>
+        Review denials queue
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- Urgent denials banner -->
+{% if urgent_denials %}
+<div class="bg-red-50 border border-red-200 rounded-xl p-5 mb-8">
+  <div class="flex items-center gap-2 mb-3">
+    <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+    </svg>
+    <h3 class="font-semibold text-red-800">{{ urgent_denials|length }} appeal deadline(s) within 7 days</h3>
+  </div>
+  <div class="space-y-2">
+    {% for denial in urgent_denials %}
+    <div class="flex items-center justify-between bg-white rounded-lg px-4 py-3 border border-red-100">
+      <div>
+        <span class="text-sm font-medium text-gray-900">{{ denial.prior_auth.patient.full_name }}</span>
+        <span class="text-xs text-gray-500 ml-2">CPT {{ denial.prior_auth.cpt_code }}</span>
+      </div>
+      <div class="flex items-center gap-3">
+        <span class="text-sm font-semibold text-red-700">
+          {{ denial.days_until_deadline }} days left
+        </span>
+        <a href="{{ url_for('prior_auth.view_auth', auth_id=denial.prior_auth_id) }}"
+           class="text-xs bg-red-600 text-white px-3 py-1 rounded-full hover:bg-red-700">
+          View
+        </a>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- Recent auths table -->
+<div class="bg-white rounded-xl border border-gray-200">
+  <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+    <h2 class="font-semibold text-gray-900">Recent Authorizations</h2>
+    <a href="{{ url_for('prior_auth.list_auths') }}" class="text-sm text-teal-600 hover:underline">View all</a>
+  </div>
+
+  {% if recent_auths %}
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="bg-gray-50 text-left">
+          <th class="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Patient</th>
+          <th class="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">CPT</th>
+          <th class="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Payer</th>
+          <th class="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Status</th>
+          <th class="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Submitted</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-50">
+        {% for auth in recent_auths %}
+        <tr class="hover:bg-gray-50 cursor-pointer"
+            onclick="window.location='{{ url_for('prior_auth.view_auth', auth_id=auth.id) }}'">
+          <td class="px-6 py-3 font-medium text-gray-900">{{ auth.patient.full_name }}</td>
+          <td class="px-6 py-3 text-gray-600">{{ auth.cpt_code }}</td>
+          <td class="px-6 py-3 text-gray-600">{{ auth.payer_name }}</td>
+          <td class="px-6 py-3">
+            <span class="badge {{ auth.status_badge_class }}">
+              {{ auth.status.replace('_', ' ').title() }}
+            </span>
+          </td>
+          <td class="px-6 py-3 text-gray-500">
+            {{ auth.created_at.strftime('%b %d, %Y') }}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="px-6 py-12 text-center">
+    <p class="text-gray-400 text-sm">No authorization requests yet.</p>
+    <a href="{{ url_for('prior_auth.new_auth') }}"
+       class="mt-3 inline-block bg-teal-600 text-white text-sm px-4 py-2 rounded-lg hover:bg-teal-700">
+      Create your first request
+    </a>
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}

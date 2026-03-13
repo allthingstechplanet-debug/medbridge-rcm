@@ -1,0 +1,256 @@
+{% extends "base.html" %}
+{% block title %}Auth #{{ auth.id }} — MedBridge RCM{% endblock %}
+{% block content %}
+
+<!-- Header -->
+<div class="mb-6 flex items-center justify-between">
+  <div class="flex items-center gap-3">
+    <a href="{{ url_for('prior_auth.list_auths') }}" class="text-gray-400 hover:text-gray-600">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+      </svg>
+    </a>
+    <div>
+      <h1 class="text-xl font-semibold text-gray-900">
+        Auth #{{ auth.id }} — {{ auth.patient.full_name }}
+      </h1>
+      <p class="text-sm text-gray-500">Created {{ auth.created_at.strftime('%B %d, %Y') }}</p>
+    </div>
+  </div>
+  <span class="badge {{ auth.status_badge_class }} text-sm px-3 py-1">
+    {{ auth.status.replace('_', ' ').title() }}
+  </span>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+  <!-- Left: details -->
+  <div class="lg:col-span-2 space-y-5">
+
+    <!-- Patient & insurance -->
+    <div class="bg-white rounded-xl border border-gray-200 p-6">
+      <h2 class="font-semibold text-gray-900 mb-4">Patient &amp; Insurance</h2>
+      <dl class="grid grid-cols-2 gap-4 text-sm">
+        <div><dt class="text-gray-500">Patient</dt><dd class="font-medium text-gray-900 mt-0.5">{{ auth.patient.full_name }}</dd></div>
+        <div><dt class="text-gray-500">Date of Birth</dt><dd class="font-medium text-gray-900 mt-0.5">{{ auth.patient.date_of_birth.strftime('%m/%d/%Y') }}</dd></div>
+        <div><dt class="text-gray-500">Member ID</dt><dd class="font-medium text-gray-900 mt-0.5">{{ auth.patient.member_id or '—' }}</dd></div>
+        <div><dt class="text-gray-500">Payer</dt><dd class="font-medium text-gray-900 mt-0.5">{{ auth.payer_name }}</dd></div>
+        <div><dt class="text-gray-500">Payer Phone</dt><dd class="font-medium text-gray-900 mt-0.5">{{ auth.payer_phone or '—' }}</dd></div>
+        {% if auth.auth_number %}
+        <div><dt class="text-gray-500">Auth Number</dt><dd class="font-semibold text-green-700 mt-0.5">{{ auth.auth_number }}</dd></div>
+        {% endif %}
+      </dl>
+    </div>
+
+    <!-- Procedure -->
+    <div class="bg-white rounded-xl border border-gray-200 p-6">
+      <h2 class="font-semibold text-gray-900 mb-4">Procedure &amp; Diagnosis</h2>
+      <dl class="grid grid-cols-2 gap-4 text-sm">
+        <div><dt class="text-gray-500">CPT Code</dt><dd class="font-medium text-gray-900 mt-0.5">{{ auth.cpt_code }}</dd></div>
+        <div><dt class="text-gray-500">Procedure</dt><dd class="font-medium text-gray-900 mt-0.5">{{ auth.cpt_description or '—' }}</dd></div>
+        <div><dt class="text-gray-500">ICD-10 Code</dt><dd class="font-medium text-gray-900 mt-0.5">{{ auth.icd10_code }}</dd></div>
+        <div><dt class="text-gray-500">Diagnosis</dt><dd class="font-medium text-gray-900 mt-0.5">{{ auth.icd10_description or '—' }}</dd></div>
+        <div><dt class="text-gray-500">Provider</dt><dd class="font-medium text-gray-900 mt-0.5">{{ auth.provider_name or '—' }}</dd></div>
+        <div><dt class="text-gray-500">Procedure Date</dt><dd class="font-medium text-gray-900 mt-0.5">{{ auth.procedure_date.strftime('%m/%d/%Y') if auth.procedure_date else '—' }}</dd></div>
+      </dl>
+      {% if auth.clinical_notes %}
+      <div class="mt-4 pt-4 border-t border-gray-100">
+        <dt class="text-sm text-gray-500 mb-1">Clinical Notes</dt>
+        <dd class="text-sm text-gray-800 whitespace-pre-wrap">{{ auth.clinical_notes }}</dd>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Denial section (if denied) -->
+    {% if auth.denial %}
+    <div class="bg-red-50 border border-red-200 rounded-xl p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="font-semibold text-red-900">Denial &amp; Appeal</h2>
+        {% if auth.denial.days_until_deadline is not none %}
+        <span class="text-sm font-semibold
+          {% if auth.denial.deadline_urgency == 'critical' %}text-red-700
+          {% elif auth.denial.deadline_urgency == 'warning' %}text-orange-600
+          {% else %}text-gray-600{% endif %}">
+          Appeal deadline: {{ auth.denial.appeal_deadline.strftime('%m/%d/%Y') }}
+          ({{ auth.denial.days_until_deadline }} days)
+        </span>
+        {% endif %}
+      </div>
+
+      <dl class="grid grid-cols-2 gap-4 text-sm mb-5">
+        <div><dt class="text-red-700">Denial Reason</dt><dd class="font-medium text-gray-900 mt-0.5">{{ auth.denial.denial_reason or '—' }}</dd></div>
+        <div><dt class="text-red-700">Denial Code</dt><dd class="font-medium text-gray-900 mt-0.5">{{ auth.denial.denial_code or '—' }}</dd></div>
+        <div><dt class="text-red-700">Appeal Status</dt><dd class="font-medium text-gray-900 mt-0.5">{{ auth.denial.appeal_status.replace('_', ' ').title() }}</dd></div>
+        <div><dt class="text-red-700">Denial Date</dt><dd class="font-medium text-gray-900 mt-0.5">{{ auth.denial.denial_date.strftime('%m/%d/%Y') }}</dd></div>
+      </dl>
+
+      <!-- AI generate button -->
+      {% if not auth.denial.appeal_letter %}
+      <form method="POST" action="{{ url_for('denial.generate_appeal', denial_id=auth.denial.id) }}">
+        <button type="submit"
+          class="bg-red-600 hover:bg-red-700 text-white text-sm font-medium px-5 py-2.5 rounded-lg transition-colors">
+          ✨ Generate AI Appeal Letter
+        </button>
+      </form>
+      {% else %}
+      <!-- Appeal letter editor -->
+      <form method="POST" action="{{ url_for('denial.update_denial', denial_id=auth.denial.id) }}">
+        <div class="mb-3">
+          <label class="block text-sm font-medium text-gray-700 mb-1.5">Appeal Letter (edit before sending)</label>
+          <textarea name="appeal_letter" rows="14"
+            class="w-full px-4 py-3 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 font-mono resize-y">{{ auth.denial.appeal_letter }}</textarea>
+        </div>
+        <div class="grid grid-cols-2 gap-4 mb-3">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1.5">Appeal Status</label>
+            <select name="appeal_status"
+              class="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
+              <option value="in_progress" {% if auth.denial.appeal_status == 'in_progress' %}selected{% endif %}>In Progress</option>
+              <option value="submitted"   {% if auth.denial.appeal_status == 'submitted' %}selected{% endif %}>Submitted</option>
+              <option value="won"         {% if auth.denial.appeal_status == 'won' %}selected{% endif %}>Won — Approved</option>
+              <option value="lost"        {% if auth.denial.appeal_status == 'lost' %}selected{% endif %}>Lost — Final Denial</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1.5">Recovery Amount ($)</label>
+            <input type="number" name="recovery_amount" step="0.01"
+              value="{{ auth.denial.recovery_amount or '' }}"
+              placeholder="0.00"
+              class="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"/>
+          </div>
+        </div>
+        <div class="flex gap-3">
+          <button type="submit"
+            class="bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium px-5 py-2.5 rounded-lg">
+            Save Appeal
+          </button>
+          <form method="POST" action="{{ url_for('denial.generate_appeal', denial_id=auth.denial.id) }}" class="inline">
+            <button type="submit" class="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium px-4 py-2.5 rounded-lg">
+              Regenerate Letter
+            </button>
+          </form>
+        </div>
+      </form>
+      {% endif %}
+    </div>
+    {% endif %}
+
+  </div>
+
+  <!-- Right sidebar: actions -->
+  <div class="space-y-5">
+
+    <!-- Update status -->
+    <div class="bg-white rounded-xl border border-gray-200 p-6">
+      <h2 class="font-semibold text-gray-900 mb-4">Update Status</h2>
+      <form method="POST" action="{{ url_for('prior_auth.update_status', auth_id=auth.id) }}" class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1.5">New Status</label>
+          <select name="status"
+            class="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
+            <option value="pending"     {% if auth.status == 'pending' %}selected{% endif %}>Pending</option>
+            <option value="submitted"   {% if auth.status == 'submitted' %}selected{% endif %}>Submitted</option>
+            <option value="approved"    {% if auth.status == 'approved' %}selected{% endif %}>Approved</option>
+            <option value="info_needed" {% if auth.status == 'info_needed' %}selected{% endif %}>More Info Needed</option>
+            <option value="cancelled"   {% if auth.status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1.5">Auth Number (if approved)</label>
+          <input type="text" name="auth_number" value="{{ auth.auth_number or '' }}" placeholder="e.g. AUT-123456"
+            class="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"/>
+        </div>
+        <button type="submit"
+          class="w-full bg-teal-600 hover:bg-teal-700 text-white font-medium py-2.5 rounded-lg text-sm">
+          Update Status
+        </button>
+      </form>
+    </div>
+
+    <!-- Record denial -->
+    {% if auth.status not in ['denied', 'approved', 'cancelled'] %}
+    <div class="bg-white rounded-xl border border-gray-200 p-6">
+      <h2 class="font-semibold text-gray-900 mb-4">Record Denial</h2>
+      <form method="POST" action="{{ url_for('denial.record_denial', auth_id=auth.id) }}" class="space-y-3">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1.5">Denial Date</label>
+          <input type="date" name="denial_date" required
+            class="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"/>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1.5">Denial Reason</label>
+          <select name="denial_reason"
+            class="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
+            <option>Not medically necessary</option>
+            <option>Experimental/investigational</option>
+            <option>Missing documentation</option>
+            <option>Out of network</option>
+            <option>Duplicate claim</option>
+            <option>Coding error</option>
+            <option>Prior auth not obtained</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1.5">Denial Code</label>
+          <input type="text" name="denial_code" placeholder="e.g. CO-50"
+            class="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"/>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1.5">Appeal Window (days)</label>
+          <select name="appeal_days"
+            class="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
+            <option value="30">30 days</option>
+            <option value="60" selected>60 days</option>
+            <option value="90">90 days</option>
+          </select>
+        </div>
+        <button type="submit"
+          class="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-2.5 rounded-lg text-sm">
+          Record Denial
+        </button>
+      </form>
+    </div>
+    {% endif %}
+
+    <!-- Timeline -->
+    <div class="bg-white rounded-xl border border-gray-200 p-6">
+      <h2 class="font-semibold text-gray-900 mb-4">Timeline</h2>
+      <div class="space-y-3 text-xs text-gray-500">
+        <div class="flex gap-2">
+          <div class="w-2 h-2 rounded-full bg-teal-500 mt-1 flex-shrink-0"></div>
+          <div>
+            <p class="font-medium text-gray-700">Created</p>
+            <p>{{ auth.created_at.strftime('%b %d, %Y %I:%M %p') }}</p>
+          </div>
+        </div>
+        {% if auth.submitted_at %}
+        <div class="flex gap-2">
+          <div class="w-2 h-2 rounded-full bg-blue-500 mt-1 flex-shrink-0"></div>
+          <div>
+            <p class="font-medium text-gray-700">Submitted</p>
+            <p>{{ auth.submitted_at.strftime('%b %d, %Y %I:%M %p') }}</p>
+          </div>
+        </div>
+        {% endif %}
+        {% if auth.decision_at %}
+        <div class="flex gap-2">
+          <div class="w-2 h-2 rounded-full {% if auth.status == 'approved' %}bg-green-500{% else %}bg-red-500{% endif %} mt-1 flex-shrink-0"></div>
+          <div>
+            <p class="font-medium text-gray-700">Decision — {{ auth.status.title() }}</p>
+            <p>{{ auth.decision_at.strftime('%b %d, %Y %I:%M %p') }}</p>
+          </div>
+        </div>
+        {% endif %}
+        {% if auth.submitted_at %}
+        <div class="mt-2 pt-2 border-t border-gray-100">
+          <p class="text-gray-500">{{ auth.days_pending }} days since submission</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Login — MedBridge RCM{% endblock %}
+{% block content %}
+<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px;">
+  <div style="width:100%;max-width:400px;">
+    <div style="text-align:center;margin-bottom:32px;">
+      <div style="width:56px;height:56px;background:#0d9488;border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+        <span style="color:white;font-size:24px;font-weight:700;">M</span>
+      </div>
+      <h1 style="font-size:24px;font-weight:600;color:#111827;">MedBridge RCM</h1>
+      <p style="color:#6b7280;margin-top:4px;font-size:14px;">Sign in to your practice account</p>
+    </div>
+    <div style="background:white;border-radius:16px;border:1px solid #e5e7eb;padding:32px;">
+      <form method="POST" action="{{ url_for('auth.login') }}">
+        <div style="margin-bottom:20px;">
+          <label style="display:block;font-size:14px;font-weight:500;color:#374151;margin-bottom:6px;">Email address</label>
+          <input type="email" name="email" required autofocus placeholder="you@yourpractice.com"
+            style="width:100%;padding:10px 16px;border-radius:8px;border:1px solid #d1d5db;font-size:14px;box-sizing:border-box;outline:none;"/>
+        </div>
+        <div style="margin-bottom:20px;">
+          <label style="display:block;font-size:14px;font-weight:500;color:#374151;margin-bottom:6px;">Password</label>
+          <input type="password" name="password" required placeholder="••••••••"
+            style="width:100%;padding:10px 16px;border-radius:8px;border:1px solid #d1d5db;font-size:14px;box-sizing:border-box;outline:none;"/>
+        </div>
+        <button type="submit"
+          style="width:100%;background:#0d9488;color:white;font-weight:500;padding:10px 16px;border-radius:8px;border:none;font-size:14px;cursor:pointer;">
+          Sign in
+        </button>
+      </form>
+    </div>
+    <p style="text-align:center;margin-top:24px;font-size:14px;color:#6b7280;">
+      New practice? <a href="{{ url_for('auth.register') }}" style="color:#0d9488;font-weight:500;">Create a free account</a>
+    </p>
+  </div>
+</div>
+{% endblock %}

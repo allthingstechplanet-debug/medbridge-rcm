@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}Add Patient — MedBridge RCM{% endblock %}
+{% block content %}
+
+<div class="mb-6 flex items-center gap-3">
+  <a href="{{ url_for('patient.list_patients') }}" class="text-gray-400 hover:text-gray-600">
+    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+    </svg>
+  </a>
+  <div>
+    <h1 class="text-2xl font-semibold text-gray-900">Add New Patient</h1>
+    <p class="text-sm text-gray-500">Patient details are stored securely and HIPAA-compliant</p>
+  </div>
+</div>
+
+<div class="max-w-2xl">
+  <form method="POST" action="{{ url_for('patient.new_patient') }}">
+    <div class="bg-white rounded-xl border border-gray-200 p-6 space-y-5">
+
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1.5">First Name <span class="text-red-500">*</span></label>
+          <input type="text" name="first_name" required placeholder="Jane"
+            class="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"/>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1.5">Last Name <span class="text-red-500">*</span></label>
+          <input type="text" name="last_name" required placeholder="Smith"
+            class="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"/>
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1.5">Date of Birth <span class="text-red-500">*</span></label>
+        <input type="date" name="date_of_birth" required
+          class="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"/>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1.5">Insurance Company</label>
+          <select name="payer_name"
+            class="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
+            <option value="">Select payer</option>
+            <option>UnitedHealthcare</option>
+            <option>Aetna</option>
+            <option>Blue Cross Blue Shield</option>
+            <option>Cigna</option>
+            <option>Humana</option>
+            <option>Medicare</option>
+            <option>Medicaid</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1.5">Member ID</label>
+          <input type="text" name="member_id" placeholder="e.g. U123456789"
+            class="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"/>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1.5">Group Number</label>
+          <input type="text" name="group_number" placeholder="e.g. GRP-987"
+            class="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"/>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1.5">Phone Number</label>
+          <input type="tel" name="phone" placeholder="(555) 000-0000"
+            class="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"/>
+        </div>
+      </div>
+
+      <div class="flex gap-3 pt-2">
+        <button type="submit"
+          class="bg-teal-600 hover:bg-teal-700 text-white font-medium py-2.5 px-6 rounded-lg text-sm">
+          Save Patient
+        </button>
+        <a href="{{ url_for('patient.list_patients') }}"
+          class="text-gray-500 hover:text-gray-700 font-medium py-2.5 px-4 rounded-lg text-sm">
+          Cancel
+        </a>
+      </div>
+
+    </div>
+  </form>
+</div>
+
+{% endblock %}

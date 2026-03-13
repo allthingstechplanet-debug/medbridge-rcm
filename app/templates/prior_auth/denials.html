@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}Denials — MedBridge RCM{% endblock %}
+{% block content %}
+
+<div class="mb-6">
+  <h1 class="text-2xl font-semibold text-gray-900">Denial Management</h1>
+  <p class="text-sm text-gray-500 mt-1">Track and appeal denied prior authorizations</p>
+</div>
+
+{% if denials %}
+<div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="bg-gray-50 border-b border-gray-100">
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Patient</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Denial Reason</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Appeal Status</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Deadline</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Letter Ready</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Action</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-50">
+        {% for denial in denials %}
+        <tr class="hover:bg-gray-50">
+          <td class="px-6 py-4">
+            <p class="font-medium text-gray-900">{{ denial.prior_auth.patient.full_name }}</p>
+            <p class="text-xs text-gray-400">CPT {{ denial.prior_auth.cpt_code }} · {{ denial.prior_auth.payer_name }}</p>
+          </td>
+          <td class="px-6 py-4 text-gray-600 max-w-xs">
+            <p class="truncate">{{ denial.denial_reason or '—' }}</p>
+            {% if denial.denial_code %}<p class="text-xs text-gray-400">{{ denial.denial_code }}</p>{% endif %}
+          </td>
+          <td class="px-6 py-4">
+            {% set appeal_classes = {
+              'not_started': 'badge-secondary',
+              'in_progress': 'badge-warning',
+              'submitted': 'badge-info',
+              'won': 'badge-success',
+              'lost': 'badge-danger'
+            } %}
+            <span class="badge {{ appeal_classes.get(denial.appeal_status, 'badge-secondary') }}">
+              {{ denial.appeal_status.replace('_', ' ').title() }}
+            </span>
+          </td>
+          <td class="px-6 py-4">
+            {% if denial.appeal_deadline %}
+            <span class="font-medium
+              {% if denial.deadline_urgency == 'critical' %}text-red-700
+              {% elif denial.deadline_urgency == 'warning' %}text-orange-600
+              {% else %}text-gray-700{% endif %}">
+              {{ denial.appeal_deadline.strftime('%m/%d/%Y') }}
+            </span>
+            <p class="text-xs
+              {% if denial.deadline_urgency == 'critical' %}text-red-500
+              {% elif denial.deadline_urgency == 'warning' %}text-orange-400
+              {% else %}text-gray-400{% endif %}">
+              {{ denial.days_until_deadline }} days left
+            </p>
+            {% else %}—{% endif %}
+          </td>
+          <td class="px-6 py-4">
+            {% if denial.appeal_letter %}
+            <span class="text-green-600 font-medium text-xs">✓ Generated</span>
+            {% else %}
+            <span class="text-gray-400 text-xs">Not yet</span>
+            {% endif %}
+          </td>
+          <td class="px-6 py-4">
+            <a href="{{ url_for('prior_auth.view_auth', auth_id=denial.prior_auth_id) }}"
+               class="bg-teal-600 text-white text-xs font-medium px-3 py-1.5 rounded-lg hover:bg-teal-700">
+              Manage
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="bg-white rounded-xl border border-gray-200 px-6 py-16 text-center">
+  <svg class="w-12 h-12 text-gray-200 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+  </svg>
+  <p class="text-gray-400">No denials recorded — great news!</p>
+</div>
+{% endif %}
+
+{% endblock %}

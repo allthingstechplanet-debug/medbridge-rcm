@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+{% block title %}New Prior Auth — MedBridge RCM{% endblock %}
+{% block content %}
+
+<div class="mb-6 flex items-center gap-3">
+  <a href="{{ url_for('prior_auth.list_auths') }}" class="text-gray-400 hover:text-gray-600">
+    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+    </svg>
+  </a>
+  <div>
+    <h1 class="text-2xl font-semibold text-gray-900">New Prior Authorization Request</h1>
+    <p class="text-sm text-gray-500">Fill in all required fields and submit for processing</p>
+  </div>
+</div>
+
+<form method="POST" action="{{ url_for('prior_auth.new_auth') }}">
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+  <!-- Left column: main form -->
+  <div class="lg:col-span-2 space-y-5">
+
+    <!-- Patient -->
+    <div class="bg-white rounded-xl border border-gray-200 p-6">
+      <h2 class="font-semibold text-gray-900 mb-4">Patient Information</h2>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1.5">
+            Select patient <span class="text-red-500">*</span>
+          </label>
+          <select name="patient_id" required
+            class="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
+            <option value="">-- Select a patient --</option>
+            {% for patient in patients %}
+            <option value="{{ patient.id }}">
+              {{ patient.full_name }} — {{ patient.payer_name }} ({{ patient.member_id }})
+            </option>
+            {% endfor %}
+          </select>
+          <p class="mt-1.5 text-xs text-gray-400">
+            Patient not listed?
+            <a href="{{ url_for('patient.new_patient') }}" class="text-teal-600 hover:underline">Add patient first</a>
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Clinical info -->
+    <div class="bg-white rounded-xl border border-gray-200 p-6">
+      <h2 class="font-semibold text-gray-900 mb-4">Procedure &amp; Diagnosis</h2>
+      <div class="space-y-4">
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1.5">
+              CPT Code <span class="text-red-500">*</span>
+            </label>
+            <input type="text" name="cpt_code" required placeholder="e.g. 27447"
+              class="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"/>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1.5">Procedure Description</label>
+            <input type="text" name="cpt_description" placeholder="e.g. Total knee replacement"
+              class="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"/>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1.5">
+              ICD-10 Code <span class="text-red-500">*</span>
+            </label>
+            <input type="text" name="icd10_code" required placeholder="e.g. M17.11"
+              class="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"/>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1.5">Diagnosis Description</label>
+            <input type="text" name="icd10_description" placeholder="e.g. Primary osteoarthritis, right knee"
+              class="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"/>
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1.5">Requested Procedure Date</label>
+          <input type="date" name="procedure_date"
+            class="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"/>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1.5">
+            Clinical Notes &amp; Medical Necessity
+          </label>
+          <textarea name="clinical_notes" rows="5" placeholder="Describe the patient's condition, treatment history, and why this procedure is medically necessary. The more detail here, the better your approval odds."
+            class="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 resize-none"></textarea>
+          <p class="mt-1 text-xs text-gray-400">More detail = higher AI approval score. Include prior treatments tried, severity, and clinical guidelines.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Provider info -->
+    <div class="bg-white rounded-xl border border-gray-200 p-6">
+      <h2 class="font-semibold text-gray-900 mb-4">Ordering Provider</h2>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1.5">Provider Name</label>
+          <input type="text" name="provider_name" placeholder="Dr. Sarah Johnson"
+            class="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"/>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1.5">Provider NPI</label>
+          <input type="text" name="provider_npi" placeholder="1234567890"
+            class="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"/>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Right column: payer + priority -->
+  <div class="space-y-5">
+
+    <div class="bg-white rounded-xl border border-gray-200 p-6">
+      <h2 class="font-semibold text-gray-900 mb-4">Insurance / Payer</h2>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1.5">
+            Payer Name <span class="text-red-500">*</span>
+          </label>
+          <select name="payer_name" required
+            class="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
+            <option value="">Select payer</option>
+            {% for payer in payers %}
+            <option value="{{ payer }}">{{ payer }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1.5">Payer Phone</label>
+          <input type="tel" name="payer_phone" placeholder="1-800-000-0000"
+            class="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"/>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-xl border border-gray-200 p-6">
+      <h2 class="font-semibold text-gray-900 mb-4">Priority</h2>
+      <div class="space-y-2">
+        <label class="flex items-center gap-3 cursor-pointer">
+          <input type="radio" name="priority" value="normal" checked class="text-teal-600"/>
+          <div>
+            <p class="text-sm font-medium text-gray-900">Normal</p>
+            <p class="text-xs text-gray-500">Standard processing</p>
+          </div>
+        </label>
+        <label class="flex items-center gap-3 cursor-pointer">
+          <input type="radio" name="priority" value="urgent" class="text-red-600"/>
+          <div>
+            <p class="text-sm font-medium text-gray-900">Urgent</p>
+            <p class="text-xs text-gray-500">Procedure within 72 hours</p>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <button type="submit"
+      class="w-full bg-teal-600 hover:bg-teal-700 text-white font-medium py-3 px-4
+             rounded-xl text-sm transition-colors">
+      Submit Authorization Request
+    </button>
+    <a href="{{ url_for('prior_auth.list_auths') }}"
+      class="block w-full text-center text-gray-500 hover:text-gray-700 text-sm py-2">
+      Cancel
+    </a>
+  </div>
+
+</div>
+</form>
+
+{% endblock %}
