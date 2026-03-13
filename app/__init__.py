@@ -11,11 +11,9 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object('config.Config')
 
-    # Init extensions
     db.init_app(app)
     login_manager.init_app(app)
 
-    # Register blueprints
     from .routes.auth import auth_bp
     from .routes.dashboard import dashboard_bp
     from .routes.prior_auth import prior_auth_bp
@@ -28,14 +26,13 @@ def create_app():
     app.register_blueprint(denial_bp)
     app.register_blueprint(patient_bp)
 
-    # Create tables on first run
     with app.app_context():
+        from . import models
         db.create_all()
 
     return app
 
-from .models import User
-
 @login_manager.user_loader
 def load_user(user_id):
+    from .models import User
     return User.query.get(int(user_id))
