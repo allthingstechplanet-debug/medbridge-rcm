@@ -89,7 +89,11 @@ tr:hover td { background:#F8FAFC; }
         </div>
         <div style="margin-bottom:12px;"><label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">Practice Name</label><input class="input" type="text" id="rPractice" placeholder="Northside Orthopedics"></div>
         <div style="margin-bottom:12px;"><label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">Work Email</label><input class="input" type="email" id="rEmail" placeholder="you@practice.com"></div>
-        <div style="margin-bottom:18px;"><label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">Password</label><input class="input" type="password" id="rPassword" placeholder="Min. 8 characters"></div>
+        <div style="margin-bottom:18px;">
+  <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">Password</label>
+  <input class="input" type="password" id="rPassword" placeholder="Min. 8 chars, uppercase, number" oninput="checkPwdStrength(this.value)">
+  <div id="pwdStrength" style="margin-top:6px;font-size:12px;"></div>
+</div>
         <button class="btn btn-primary" style="width:100%;padding:13px;font-size:15px;" onclick="doRegister()">Create Account</button>
         <p style="text-align:center;margin-top:20px;font-size:14px;color:#64748B;">Already have an account? <a href="#" style="color:var(--indigo);font-weight:600;" onclick="showLogin()">Sign in</a></p>
       </div>
@@ -426,6 +430,18 @@ function genAppeal(name,payer,cpt){
   const m=document.createElement("div");m.className="modal-overlay show";
   m.innerHTML=`<div class="modal" style="max-width:580px;"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;"><h2 style="font-size:18px;font-weight:700;">Appeal Letter — ${name}</h2><button onclick="this.closest('.modal-overlay').remove()" style="background:none;border:none;cursor:pointer;font-size:20px;color:#64748B;">×</button></div><textarea style="width:100%;height:280px;padding:16px;border:1px solid #E2E8F0;border-radius:10px;font-size:13px;line-height:1.7;resize:vertical;outline:none;">${letter}</textarea><div style="display:flex;gap:10px;margin-top:16px;justify-content:flex-end;"><button class="btn btn-secondary" onclick="navigator.clipboard.writeText(this.closest('.modal-overlay').querySelector('textarea').value);toast('✓ Copied!','success')">Copy Letter</button><button class="btn btn-primary" onclick="toast('✓ Marked as submitted','success');this.closest('.modal-overlay').remove()">Mark Submitted</button></div></div>`;
   document.body.appendChild(m);
+}
+
+function checkPwdStrength(pw){
+  const el = document.getElementById("pwdStrength");
+  if(!el) return;
+  let score = 0;
+  const checks = [pw.length>=8, /[A-Z]/.test(pw), /[a-z]/.test(pw), /\d/.test(pw), pw.length>=12];
+  checks.forEach(c => c && score++);
+  const labels = ["","Weak","Fair","Good","Strong","Very Strong"];
+  const colors = ["","#DC2626","#D97706","#2563EB","#059669","#065F46"];
+  const bars = checks.slice(0,4).map((c,i) => `<div style="flex:1;height:4px;border-radius:2px;background:${i<score?colors[score]:'#E2E8F0'};"></div>`).join("");
+  el.innerHTML = pw ? `<div style="display:flex;gap:4px;margin-bottom:4px;">${bars}</div><span style="color:${colors[score]};">${labels[score]||""}</span>` : "";
 }
 
 window.addEventListener("load",async()=>{
