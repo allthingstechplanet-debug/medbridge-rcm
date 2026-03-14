@@ -36,3 +36,32 @@ def login():
 def logout():
     logout_user()
     return redirect(url_for('auth.login'))
+
+
+@auth_bp.route('/api/login', methods=['POST'])
+def api_login():
+    from flask import jsonify, request
+    email = request.json.get('email')
+    password = request.json.get('password')
+    user = User.query.filter_by(email=email).first()
+    if user and user.check_password(password):
+        login_user(user)
+        return jsonify({'success': True, 'name': user.first_name or email.split('@')[0]})
+    return jsonify({'success': False, 'error': 'Invalid email or password'}), 401
+
+@auth_bp.route('/api/register', methods=['POST'])
+def api_register():
+    from flask import jsonify, request
+    data = request.json
+    if User.query.filter_by(email=data.get('email')).first():
+        return jsonify({'success': False, 'error': 'Email already registered'}), 400
+    practice = Practice(name=data.get('practice_name','My Practice'))
+    db.session.add(practice)
+    db.session.flush()
+    user = User(email=data.get('email'), practice_id=practice.id,
+        first_name=data.get('first_name',''), last_name=data.get('last_name',''), role='admin')
+    user.set_password(data.get('password',''))
+    db.session.add(user)
+    db.session.commit()
+    login_user(user)
+    return jsonify({'success': True, 'name': user.first_name or data.get('email','').split('@')[0]})

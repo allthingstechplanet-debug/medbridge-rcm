@@ -254,27 +254,32 @@ async function doLogin(){
   err.style.display="none";
   document.getElementById("loginBtn").textContent="Signing in...";
   try{
-    const r=await fetch(API+"/login",{method:"POST",credentials:"include",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:`email=${encodeURIComponent(email)}&password=${encodeURIComponent(pw)}`});
-    if(r.ok||r.redirected){
-      const check=await fetch(API+"/api/dashboard",{credentials:"include"});
-      if(check.ok){enterApp(email);}
-      else{err.textContent="Invalid email or password.";err.style.display="block";document.getElementById("loginBtn").textContent="Sign in to Dashboard →";}
-    } else{
-      err.textContent="Invalid email or password.";err.style.display="block";
+    const r=await fetch(API+"/api/login",{method:"POST",credentials:"include",headers:{"Content-Type":"application/json"},body:JSON.stringify({email,password:pw})});
+    const d=await r.json();
+    if(r.ok && d.success){
+      enterApp(email, d.name);
+    } else {
+      err.textContent=d.error||"Invalid email or password.";
+      err.style.display="block";
       document.getElementById("loginBtn").textContent="Sign in to Dashboard →";
     }
   }catch(e){
-    err.textContent="Login failed. Please try again.";err.style.display="block";
+    err.textContent="Login failed. Please try again.";
+    err.style.display="block";
     document.getElementById("loginBtn").textContent="Sign in to Dashboard →";
   }
 }
 
 async function doRegister(){
   const d={first_name:document.getElementById("rFirst").value,last_name:document.getElementById("rLast").value,practice_name:document.getElementById("rPractice").value,email:document.getElementById("rEmail").value,password:document.getElementById("rPassword").value};
+  if(!d.email||!d.password||!d.practice_name){alert("Please fill in all fields.");return;}
+  if(d.password.length<8){alert("Password must be at least 8 characters.");return;}
   try{
-    const r=await fetch(API+"/register",{method:"POST",credentials:"include",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:Object.entries(d).map(([k,v])=>`${k}=${encodeURIComponent(v)}`).join("&")});
-    enterApp(d.email,d.first_name);
-  }catch(e){enterApp(d.email,d.first_name);}
+    const r=await fetch(API+"/api/register",{method:"POST",credentials:"include",headers:{"Content-Type":"application/json"},body:JSON.stringify(d)});
+    const j=await r.json();
+    if(r.ok && j.success){enterApp(d.email,j.name);}
+    else{alert(j.error||"Registration failed.");}
+  }catch(e){alert("Registration failed. Please try again.");}
 }
 
 async function doLogout(){
