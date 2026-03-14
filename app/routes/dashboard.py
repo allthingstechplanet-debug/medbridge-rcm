@@ -96,59 +96,60 @@ def api_patients():
     patients = Patient.query.filter_by(practice_id=current_user.practice_id).all()
     return jsonify({'patients': [{'id': p.id, 'first_name': p.first_name, 'last_name': p.last_name, 'date_of_birth': str(p.date_of_birth or ''), 'payer_name': p.payer_name, 'member_id': p.member_id} for p in patients]})
 
+
+
 @dashboard_bp.route('/seed-demo-data-xyz123')
 def seed_demo():
     from app.models import Patient, PriorAuth, Practice, User
-    from datetime import datetime, timedelta
-    import random
-    if Practice.query.filter_by(name='Northside Orthopedics').first():
-        return 'Demo data already exists! <a href="/login">Login</a> with demo@northside.com / Demo1234!'
-    practice = Practice(name='Northside Orthopedics')
-    db.session.add(practice)
-    db.session.flush()
-    user = User(email='demo@northside.com', practice_id=practice.id,
-        first_name='Sarah', last_name='Mitchell', role='admin')
-    user.set_password('Demo1234!')
-    db.session.add(user)
-    db.session.flush()
-    patients_data = [
-        ('Michael','Johnson','1965-03-15','UnitedHealthcare','UHC-4521890'),
-        ('Patricia','Williams','1958-07-22','Aetna','AET-7823456'),
-        ('Robert','Davis','1972-11-08','Blue Cross Blue Shield','BCBS-3341290'),
-        ('Jennifer','Martinez','1980-04-30','Cigna','CIG-9087234'),
-        ('William','Anderson','1955-09-14','Medicare','MED-1234567A'),
-        ('Linda','Thompson','1968-01-25','Humana','HUM-5678901'),
-        ('James','Garcia','1975-06-18','Aetna','AET-2345678'),
-        ('Barbara','Wilson','1962-12-03','UnitedHealthcare','UHC-8901234'),
-    ]
-    patients = []
-    for fn,ln,dob,payer,mid in patients_data:
-        p = Patient(practice_id=practice.id, first_name=fn, last_name=ln,
-            date_of_birth=datetime.strptime(dob,'%Y-%m-%d').date(),
-            payer_name=payer, member_id=mid)
-        db.session.add(p)
-        patients.append(p)
-    db.session.flush()
-    auths = [
-        (0,'27447','M17.11','approved','normal','Severe osteoarthritis, failed PT and injections for 6 months.'),
-        (1,'70553','G43.909','approved','normal','Chronic migraines unresponsive to medication.'),
-        (2,'29827','M75.121','pending','urgent','Full thickness rotator cuff tear on MRI. Failed conservative treatment.'),
-        (3,'27130','M16.11','pending','normal','End-stage osteoarthritis, severe pain limiting daily activities.'),
-        (4,'93306','I50.9','submitted','normal','Heart failure monitoring, ejection fraction 35%.'),
-        (5,'29881','M23.201','denied','normal','Medial meniscus tear on MRI. Patient unable to walk without pain.'),
-        (6,'22612','M51.16','pending','urgent','Severe lumbar stenosis. Failed 12 months conservative care.'),
-        (7,'27486','T84.052A','approved','normal','Aseptic loosening of prior knee replacement.'),
-        (2,'20610','M17.31','denied','normal','Moderate osteoarthritis, pain uncontrolled by oral medications.'),
-        (4,'71046','J18.9','approved','normal','Pneumonia follow-up imaging required.'),
-    ]
-    for pat_idx,cpt,icd,status,priority,notes in auths:
-        a = PriorAuth(practice_id=practice.id, patient_id=patients[pat_idx].id,
-            cpt_code=cpt, icd10_code=icd, payer_name=patients[pat_idx].payer_name,
-            status=status, priority=priority, clinical_notes=notes,
-            created_at=datetime.utcnow()-timedelta(days=random.randint(1,45)))
-        db.session.add(a)
-    db.session.commit()
-    return '''<h2>✅ Demo data created!</h2>
-    <p><strong>Email:</strong> demo@northside.com</p>
-    <p><strong>Password:</strong> Demo1234!</p>
-    <p><a href="/login">Click here to login</a></p>'''
+    from datetime import datetime
+    try:
+        if Practice.query.filter_by(name='Northside Orthopedics').first():
+            return "Demo already exists! Login: demo@northside.com / Demo1234! <a href='/login'>Go to login</a>"
+        
+        practice = Practice(name='Northside Orthopedics')
+        db.session.add(practice)
+        db.session.flush()
+        
+        user = User(email='demo@northside.com', practice_id=practice.id,
+            first_name='Sarah', last_name='Mitchell', role='admin')
+        user.set_password('Demo1234!')
+        db.session.add(user)
+        db.session.flush()
+        
+        pats = []
+        for fn,ln,dob,payer,mid in [
+            ('Michael','Johnson','1965-03-15','UnitedHealthcare','UHC-452189'),
+            ('Patricia','Williams','1958-07-22','Aetna','AET-782345'),
+            ('Robert','Davis','1972-11-08','Blue Cross','BCBS-334129'),
+            ('Jennifer','Martinez','1980-04-30','Cigna','CIG-908723'),
+            ('William','Anderson','1955-09-14','Medicare','MED-123456'),
+            ('Linda','Thompson','1968-01-25','Humana','HUM-567890'),
+        ]:
+            p = Patient(practice_id=practice.id, first_name=fn, last_name=ln,
+                payer_name=payer, member_id=mid)
+            db.session.add(p)
+            pats.append(p)
+        db.session.flush()
+        
+        for pi,cpt,icd,status,priority in [
+            (0,'27447','M17.11','approved','normal'),
+            (1,'70553','G43.909','approved','normal'),
+            (2,'29827','M75.121','pending','urgent'),
+            (3,'27130','M16.11','pending','normal'),
+            (4,'93306','I50.9','submitted','normal'),
+            (5,'29881','M23.201','denied','normal'),
+            (0,'22612','M51.16','pending','urgent'),
+            (1,'20610','M17.31','denied','normal'),
+        ]:
+            a = PriorAuth(practice_id=practice.id,
+                patient_id=pats[pi].id,
+                cpt_code=cpt, icd10_code=icd,
+                payer_name=pats[pi].payer_name,
+                status=status, priority=priority)
+            db.session.add(a)
+        
+        db.session.commit()
+        return "<h2>✅ Demo data created!</h2><p>Email: demo@northside.com</p><p>Password: Demo1234!</p><a href='/login'>Login now</a>"
+    except Exception as e:
+        db.session.rollback()
+        return f"Error: {str(e)}"
