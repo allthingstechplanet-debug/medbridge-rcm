@@ -63,3 +63,35 @@ def landing():
 def index():
     from flask import render_template
     return render_template('medbridge_ui.html')
+
+import json
+from flask import jsonify
+
+@dashboard_bp.route('/api/dashboard')
+@login_required
+def api_dashboard():
+    from app.models import PriorAuth, Patient
+    practice_id = current_user.practice_id
+    auths = PriorAuth.query.filter_by(practice_id=practice_id).all()
+    patients = Patient.query.filter_by(practice_id=practice_id).all()
+    total = len(auths)
+    pending = len([a for a in auths if a.status == 'pending'])
+    approved = len([a for a in auths if a.status == 'approved'])
+    denied = len([a for a in auths if a.status == 'denied'])
+    rate = round((approved / total * 100)) if total > 0 else 0
+    return jsonify({
+        'total_auths': total,
+        'pending_auths': pending,
+        'approved_auths': approved,
+        'denied_auths': denied,
+        'total_patients': len(patients),
+        'approval_rate': rate,
+        'recent_auths': [{'patient_name': f'{a.patient.first_name} {a.patient.last_name}' if a.patient else '', 'cpt_code': a.cpt_code, 'payer_name': a.payer_name, 'status': a.status, 'priority': a.priority} for a in auths[:10]]
+    })
+
+@dashboard_bp.route('/api/patients')
+@login_required
+def api_patients():
+    from app.models import Patient
+    patients = Patient.query.filter_by(practice_id=current_user.practice_id).all()
+    return jsonify({'patients': [{'id': p.id, 'first_name': p.first_name, 'last_name': p.last_name, 'date_of_birth': str(p.date_of_birth or ''), 'payer_name': p.payer_name, 'member_id': p.member_id} for p in patients]})

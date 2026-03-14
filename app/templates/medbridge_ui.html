@@ -292,7 +292,7 @@ function enterApp(email,name){
 
 async function loadData(){
   try{
-    const r=await fetch(API+"/dashboard",{credentials:"include"});
+    const r=await fetch(API+"/api/dashboard",{credentials:"include"});
     if(r.ok){const d=await r.json();
       document.getElementById("sTot").textContent=d.total_auths||0;
       document.getElementById("sPend").textContent=d.pending_auths||0;
@@ -306,7 +306,7 @@ async function loadData(){
     }
   }catch(e){}
   try{
-    const r=await fetch(API+"/patients",{credentials:"include"});
+    const r=await fetch(API+"/api/patients",{credentials:"include"});
     if(r.ok){const d=await r.json();patients=d.patients||[];document.getElementById("sPat").textContent=patients.length;updatePatSel();}
   }catch(e){}
 }
@@ -409,7 +409,7 @@ window.addEventListener("load",async()=>{
     sessionStorage.removeItem("loggedOut");
     return;
   }
-  try{const r=await fetch(API+"/dashboard",{credentials:"include"});if(r.ok){enterApp("","Admin");}}catch(e){}
+  try{const r=await fetch(API+"/api/dashboard",{credentials:"include"});if(r.ok){enterApp("","Admin");}}catch(e){}
 });
 </script>
 </body>
