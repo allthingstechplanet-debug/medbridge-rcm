@@ -54,10 +54,6 @@ def home():
         total_patients=total_patients,
     )
 
-@dashboard_bp.route('/')
-def landing():
-    from flask import render_template
-    return render_template('index.html')
 
 
 import json
