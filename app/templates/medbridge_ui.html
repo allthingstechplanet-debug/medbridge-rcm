@@ -269,6 +269,7 @@ async function doRegister(){
 }
 
 async function doLogout(){
+  sessionStorage.setItem("loggedOut","true");
   try{await fetch(API+"/logout",{credentials:"include"});}catch(e){}
   patients=[];auths=[];
   document.getElementById("appPage").style.display="none";
@@ -403,6 +404,11 @@ function genAppeal(name,payer,cpt){
 }
 
 window.addEventListener("load",async()=>{
+  // Only auto-login if we came from a previous session (not after logout)
+  if(sessionStorage.getItem("loggedOut")) {
+    sessionStorage.removeItem("loggedOut");
+    return;
+  }
   try{const r=await fetch(API+"/dashboard",{credentials:"include"});if(r.ok){enterApp("","Admin");}}catch(e){}
 });
 </script>
