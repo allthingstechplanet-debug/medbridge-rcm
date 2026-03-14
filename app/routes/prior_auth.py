@@ -163,3 +163,23 @@ def update_status(auth_id):
 
     flash(f'Status updated to {new_status.replace("_", " ").title()}.', 'success')
     return redirect(url_for('prior_auth.view_auth', auth_id=auth_id))
+
+from flask import jsonify
+
+@prior_auth_bp.route('/api/prior-auths')
+@login_required
+def api_list_auths():
+    auths = PriorAuth.query.filter_by(practice_id=current_user.practice_id).all()
+    return jsonify({'auths': [{'id': a.id, 'patient_name': f'{a.patient.first_name} {a.patient.last_name}' if a.patient else '', 'cpt_code': a.cpt_code, 'payer_name': a.payer_name, 'status': a.status, 'priority': a.priority} for a in auths]})
+
+@prior_auth_bp.route('/api/prior-auths/<int:auth_id>/status', methods=['POST'])
+@login_required
+def api_update_status(auth_id):
+    from flask import request
+    auth = PriorAuth.query.filter_by(id=auth_id, practice_id=current_user.practice_id).first()
+    if not auth:
+        return jsonify({'error': 'Not found'}), 404
+    data = request.get_json()
+    auth.status = data.get('status', auth.status)
+    db.session.commit()
+    return jsonify({'success': True})

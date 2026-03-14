@@ -302,7 +302,7 @@ async function loadData(){
       const rt=d.approval_rate||0;
       document.getElementById("rateDisplay").textContent=rt+"%";
       document.getElementById("rateBar").style.width=rt+"%";
-      auths=d.recent_auths||[];renderRecent();
+      auths=d.recent_auths||[];renderRecent();loadAuths();
     }
   }catch(e){}
   try{
@@ -316,11 +316,15 @@ function renderRecent(){
   document.getElementById("recentTable").innerHTML=`<table style="width:100%;border-collapse:collapse;"><thead><tr style="background:#F8FAFC;"><th style="padding:12px 20px;text-align:left;font-size:12px;font-weight:600;color:#64748B;text-transform:uppercase;">Patient</th><th style="padding:12px 20px;text-align:left;font-size:12px;font-weight:600;color:#64748B;text-transform:uppercase;">CPT</th><th style="padding:12px 20px;text-align:left;font-size:12px;font-weight:600;color:#64748B;text-transform:uppercase;">Payer</th><th style="padding:12px 20px;text-align:left;font-size:12px;font-weight:600;color:#64748B;text-transform:uppercase;">Status</th></tr></thead><tbody>${auths.slice(0,6).map(a=>`<tr style="border-top:1px solid #F1F5F9;"><td style="padding:14px 20px;font-size:14px;font-weight:500;">${a.patient_name||"—"}</td><td style="padding:14px 20px;font-size:14px;color:#64748B;">${a.cpt_code||"—"}</td><td style="padding:14px 20px;font-size:14px;color:#64748B;">${a.payer_name||"—"}</td><td style="padding:14px 20px;">${badge(a.status)}</td></tr>`).join("")}</tbody></table>`;
 }
 
-function updateStatus(idx, newStatus){
+async function updateStatus(idx, newStatus){
   auths[idx].status = newStatus;
   document.getElementById("statusModal").remove();
   toast("✓ Status updated to " + newStatus, "success");
-  renderAuths(); renderRecent();
+  renderAuths(); renderDenials(); renderRecent();
+  const authId = auths[idx].id;
+  if(authId){
+    try{await fetch(API+"/api/prior-auths/"+authId+"/status",{method:"POST",credentials:"include",headers:{"Content-Type":"application/json"},body:JSON.stringify({status:newStatus})});}catch(e){}
+  }
 }
 
 function openStatusModal(idx){
@@ -346,6 +350,13 @@ function openStatusModal(idx){
     </div>
   </div>`;
   document.body.appendChild(m);
+}
+
+async function loadAuths(){
+  try{
+    const r=await fetch(API+"/api/prior-auths",{credentials:"include"});
+    if(r.ok){const d=await r.json();auths=d.auths||[];renderAuths();renderDenials();}
+  }catch(e){}
 }
 
 function renderAuths(){
