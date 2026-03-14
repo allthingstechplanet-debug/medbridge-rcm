@@ -59,10 +59,6 @@ def landing():
     from flask import render_template
     return render_template('index.html')
 
-@dashboard_bp.route('/')
-def index():
-    from flask import render_template
-    return render_template('medbridge_ui.html')
 
 import json
 from flask import jsonify
