@@ -4,9 +4,375 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MedBridge RCM</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
+<style>
+* { font-family: "DM Sans", sans-serif; }
+:root { --indigo:#4F46E5; --teal:#0D9488; --slate:#0F172A; }
+body { background:#F8FAFC; }
+.nav-link { display:flex; align-items:center; gap:10px; padding:10px 16px; border-radius:10px; color:#94A3B8; font-size:14px; font-weight:500; transition:all 0.15s; cursor:pointer; text-decoration:none; }
+.nav-link:hover { background:rgba(255,255,255,0.07); color:#fff; }
+.nav-link.active { background:var(--indigo); color:#fff; }
+.stat-card { background:white; border-radius:16px; padding:24px; border:1px solid #E2E8F0; }
+.badge { display:inline-flex; align-items:center; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:600; }
+.badge-pending { background:#FEF3C7; color:#92400E; }
+.badge-approved { background:#D1FAE5; color:#065F46; }
+.badge-denied { background:#FEE2E2; color:#991B1B; }
+.badge-submitted { background:#DBEAFE; color:#1E40AF; }
+.btn { padding:10px 20px; border-radius:10px; font-weight:600; font-size:14px; border:none; cursor:pointer; transition:all 0.15s; }
+.btn-primary { background:var(--indigo); color:white; }
+.btn-primary:hover { background:#3730A3; }
+.btn-secondary { background:white; color:var(--slate); border:1px solid #E2E8F0; }
+.input { width:100%; padding:11px 16px; border:1px solid #E2E8F0; border-radius:10px; font-size:14px; outline:none; }
+.input:focus { border-color:var(--indigo); box-shadow:0 0 0 3px rgba(79,70,229,0.1); }
+.page { display:none; }
+.page.active { display:flex; }
+.modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; z-index:1000; opacity:0; pointer-events:none; transition:opacity 0.2s; }
+.modal-overlay.show { opacity:1; pointer-events:all; }
+.modal { background:white; border-radius:20px; padding:32px; max-width:540px; width:90%; transform:scale(0.95); transition:transform 0.2s; }
+.modal-overlay.show .modal { transform:scale(1); }
+.toast { position:fixed; bottom:24px; right:24px; background:#0F172A; color:white; padding:14px 20px; border-radius:12px; font-size:14px; font-weight:500; z-index:9999; transform:translateY(100px); transition:transform 0.3s; }
+.toast.show { transform:translateY(0); }
+tr:hover td { background:#F8FAFC; }
+</style>
 </head>
 <body>
-<script>window.location.href='/login'</script>
+<div id="toast" class="toast"></div>
+
+<!-- LOGIN -->
+<div id="loginPage" class="page active" style="min-height:100vh;">
+  <div style="width:44%;background:linear-gradient(145deg,#3730A3,#4F46E5 50%,#0D9488);padding:60px;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden;">
+    <div style="position:relative;z-index:1;">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:60px;">
+        <div style="width:44px;height:44px;background:rgba(255,255,255,0.2);border-radius:12px;display:flex;align-items:center;justify-content:center;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        </div>
+        <span style="color:white;font-weight:700;font-size:20px;">MedBridge RCM</span>
+      </div>
+      <h1 style="color:white;font-size:40px;font-weight:700;line-height:1.15;margin-bottom:20px;">Automate prior<br>authorizations.<br><span style="color:rgba(255,255,255,0.7);">Accelerate patient care.</span></h1>
+      <p style="color:rgba(255,255,255,0.7);font-size:15px;line-height:1.7;margin-bottom:36px;">The intelligent platform for independent medical practices to streamline workflows and reduce denials.</p>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div style="display:flex;align-items:center;gap:10px;color:rgba(255,255,255,0.85);font-size:14px;">✓ &nbsp;AI-powered prior auth generation</div>
+        <div style="display:flex;align-items:center;gap:10px;color:rgba(255,255,255,0.85);font-size:14px;">✓ &nbsp;Automated denial appeal letters</div>
+        <div style="display:flex;align-items:center;gap:10px;color:rgba(255,255,255,0.85);font-size:14px;">✓ &nbsp;Real-time payer portal tracking</div>
+      </div>
+    </div>
+    <p style="color:rgba(255,255,255,0.4);font-size:13px;position:relative;z-index:1;">© 2026 MedBridge RCM Inc. All rights reserved.</p>
+  </div>
+
+  <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:60px;">
+    <div style="width:100%;max-width:400px;">
+      <div id="loginForm">
+        <h2 style="font-size:28px;font-weight:700;margin-bottom:6px;">Welcome back</h2>
+        <p style="color:#64748B;font-size:15px;margin-bottom:32px;">Sign in to your practice dashboard.</p>
+        <div style="margin-bottom:16px;">
+          <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">Work Email</label>
+          <input class="input" type="email" id="loginEmail" placeholder="dr.smith@practice.com">
+        </div>
+        <div style="margin-bottom:8px;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+            <label style="font-size:13px;font-weight:600;">Password</label>
+            <a href="#" style="font-size:13px;color:var(--indigo);font-weight:500;">Forgot password?</a>
+          </div>
+          <input class="input" type="password" id="loginPassword" placeholder="••••••••" onkeypress="if(event.key===&apos;Enter&apos;)doLogin()">
+        </div>
+        <div id="loginErr" style="color:#DC2626;font-size:13px;margin:8px 0;display:none;"></div>
+        <button class="btn btn-primary" style="width:100%;padding:13px;font-size:15px;margin-top:8px;" onclick="doLogin()" id="loginBtn">Sign in to Dashboard →</button>
+        <p style="text-align:center;margin-top:24px;font-size:14px;color:#64748B;">New to MedBridge? <a href="#" style="color:var(--indigo);font-weight:600;" onclick="showReg()">Request a demo</a></p>
+      </div>
+      <div id="registerForm" style="display:none;">
+        <h2 style="font-size:28px;font-weight:700;margin-bottom:6px;">Create your account</h2>
+        <p style="color:#64748B;font-size:15px;margin-bottom:24px;">Start your 60-day free trial today.</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+          <div><label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">First Name</label><input class="input" type="text" id="rFirst" placeholder="Jane"></div>
+          <div><label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">Last Name</label><input class="input" type="text" id="rLast" placeholder="Smith"></div>
+        </div>
+        <div style="margin-bottom:12px;"><label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">Practice Name</label><input class="input" type="text" id="rPractice" placeholder="Northside Orthopedics"></div>
+        <div style="margin-bottom:12px;"><label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">Work Email</label><input class="input" type="email" id="rEmail" placeholder="you@practice.com"></div>
+        <div style="margin-bottom:18px;"><label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">Password</label><input class="input" type="password" id="rPassword" placeholder="Min. 8 characters"></div>
+        <button class="btn btn-primary" style="width:100%;padding:13px;font-size:15px;" onclick="doRegister()">Create Account</button>
+        <p style="text-align:center;margin-top:20px;font-size:14px;color:#64748B;">Already have an account? <a href="#" style="color:var(--indigo);font-weight:600;" onclick="showLogin()">Sign in</a></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="appPage" class="page" style="min-height:100vh;">
+  <aside style="width:240px;flex-shrink:0;background:var(--slate);display:flex;flex-direction:column;padding:24px 16px;">
+    <div style="display:flex;align-items:center;gap:10px;padding:8px;margin-bottom:32px;">
+      <div style="width:36px;height:36px;background:var(--indigo);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+      </div>
+      <span style="color:white;font-weight:700;font-size:16px;">MedBridge</span>
+    </div>
+    <nav style="display:flex;flex-direction:column;gap:4px;flex:1;">
+      <a class="nav-link active" id="nav-dashboard" onclick="show('dashboard')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Dashboard</a>
+      <a class="nav-link" id="nav-auths" onclick="show('auths')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>Prior Auths</a>
+      <a class="nav-link" id="nav-denials" onclick="show('denials')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>Denials</a>
+      <a class="nav-link" id="nav-patients" onclick="show('patients')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Patients</a>
+    </nav>
+    <div style="border-top:1px solid rgba(255,255,255,0.1);padding-top:16px;margin-top:auto;">
+      <a class="nav-link" onclick="doLogout()" style="color:#F87171;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Sign Out</a>
+    </div>
+    <div style="background:rgba(255,255,255,0.06);border-radius:12px;padding:12px 14px;margin-top:12px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div id="uAvatar" style="width:34px;height:34px;background:var(--teal);border-radius:10px;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:13px;flex-shrink:0;">A</div>
+        <div><div id="uName" style="color:white;font-size:13px;font-weight:600;">Admin</div><div style="color:#64748B;font-size:11px;">Administrator</div></div>
+      </div>
+    </div>
+  </aside>
+
+  <main style="flex:1;overflow-y:auto;padding:32px 36px;background:#F8FAFC;">
+    <!-- DASHBOARD -->
+    <div id="view-dashboard">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;">
+        <div><h1 style="font-size:26px;font-weight:700;margin-bottom:4px;">Dashboard</h1><p id="welcomeMsg" style="color:#64748B;font-size:14px;">Good to see you back.</p></div>
+        <button class="btn btn-primary" onclick="show('auths');setTimeout(()=>openNewAuth(),100)">+ New Prior Auth</button>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-bottom:24px;">
+        <div class="stat-card"><div style="font-size:12px;font-weight:600;color:#64748B;text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px;">Total Auths</div><div id="sTot" style="font-size:32px;font-weight:700;">0</div></div>
+        <div class="stat-card"><div style="font-size:12px;font-weight:600;color:#64748B;text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px;">Pending</div><div id="sPend" style="font-size:32px;font-weight:700;color:#D97706;">0</div></div>
+        <div class="stat-card"><div style="font-size:12px;font-weight:600;color:#64748B;text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px;">Approved</div><div id="sApp" style="font-size:32px;font-weight:700;color:#059669;">0</div></div>
+        <div class="stat-card"><div style="font-size:12px;font-weight:600;color:#64748B;text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px;">Denied</div><div id="sDen" style="font-size:32px;font-weight:700;color:#DC2626;">0</div></div>
+        <div class="stat-card" style="background:linear-gradient(135deg,#4F46E5,#0D9488);border:none;"><div style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.7);text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px;">Patients</div><div id="sPat" style="font-size:32px;font-weight:700;color:white;">0</div><a onclick="show('patients')" href="#" style="font-size:12px;color:rgba(255,255,255,0.8);">+ Add patient</a></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 280px;gap:20px;">
+        <div style="background:white;border-radius:16px;border:1px solid #E2E8F0;overflow:hidden;">
+          <div style="padding:20px 24px;border-bottom:1px solid #F1F5F9;display:flex;align-items:center;justify-content:space-between;">
+            <h3 style="font-size:15px;font-weight:700;">Recent Authorizations</h3>
+            <a onclick="show('auths')" href="#" style="font-size:13px;color:var(--indigo);font-weight:600;">View all →</a>
+          </div>
+          <div id="recentTable"><div style="padding:40px;text-align:center;color:#64748B;font-size:14px;">No authorization requests yet.<br><br><button class="btn btn-primary" style="font-size:13px;padding:8px 16px;" onclick="show('auths');setTimeout(()=>openNewAuth(),100)">Create your first request</button></div></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:16px;">
+          <div style="background:var(--slate);border-radius:16px;padding:20px;">
+            <h3 style="color:white;font-size:14px;font-weight:700;margin-bottom:14px;">Quick Actions</h3>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <button onclick="show('auths');setTimeout(()=>openNewAuth(),100)" style="background:rgba(255,255,255,0.08);border:none;border-radius:10px;padding:10px 14px;color:white;font-size:13px;font-weight:500;cursor:pointer;text-align:left;">+ New prior auth request</button>
+              <button onclick="show('patients');setTimeout(()=>openAddPat(),100)" style="background:rgba(255,255,255,0.08);border:none;border-radius:10px;padding:10px 14px;color:white;font-size:13px;font-weight:500;cursor:pointer;text-align:left;">+ Add new patient</button>
+              <button onclick="show('denials')" style="background:rgba(255,255,255,0.08);border:none;border-radius:10px;padding:10px 14px;color:white;font-size:13px;font-weight:500;cursor:pointer;text-align:left;">⚠ Review denials queue</button>
+            </div>
+          </div>
+          <div style="background:white;border:1px solid #E2E8F0;border-radius:16px;padding:20px;">
+            <h3 style="font-size:14px;font-weight:700;margin-bottom:4px;">Approval Rate</h3>
+            <div id="rateDisplay" style="font-size:36px;font-weight:700;color:var(--teal);margin:10px 0;">0%</div>
+            <div style="background:#F1F5F9;border-radius:999px;height:8px;overflow:hidden;"><div id="rateBar" style="background:linear-gradient(90deg,var(--teal),var(--indigo));height:100%;width:0%;transition:width 1s;border-radius:999px;"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PRIOR AUTHS -->
+    <div id="view-auths" style="display:none;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;">
+        <div><h1 style="font-size:26px;font-weight:700;margin-bottom:4px;">Prior Authorizations</h1><p style="color:#64748B;font-size:14px;">Manage all authorization requests</p></div>
+        <button class="btn btn-primary" onclick="openNewAuth()">+ New Request</button>
+      </div>
+      <div style="background:white;border-radius:16px;border:1px solid #E2E8F0;overflow:hidden;">
+        <div style="padding:16px 20px;border-bottom:1px solid #F1F5F9;display:flex;gap:8px;">
+          <input class="input" style="max-width:280px;padding:9px 14px;" placeholder="Search..." id="authSearch" oninput="renderAuths()">
+          <select class="input" style="max-width:160px;padding:9px 14px;" id="authFilter" onchange="renderAuths()">
+            <option value="">All Status</option><option value="pending">Pending</option><option value="approved">Approved</option><option value="denied">Denied</option><option value="submitted">Submitted</option>
+          </select>
+        </div>
+        <div id="authsBody"></div>
+      </div>
+    </div>
+
+    <!-- DENIALS -->
+    <div id="view-denials" style="display:none;">
+      <div style="margin-bottom:28px;"><h1 style="font-size:26px;font-weight:700;margin-bottom:4px;">Denials Queue</h1><p style="color:#64748B;font-size:14px;">Manage denial appeals</p></div>
+      <div style="background:white;border-radius:16px;border:1px solid #E2E8F0;overflow:hidden;"><div id="denialsBody"><div style="padding:60px;text-align:center;color:#64748B;font-size:14px;">No denied authorizations yet.</div></div></div>
+    </div>
+
+    <!-- PATIENTS -->
+    <div id="view-patients" style="display:none;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;">
+        <div><h1 style="font-size:26px;font-weight:700;margin-bottom:4px;">Patients</h1><p style="color:#64748B;font-size:14px;">Manage patient records</p></div>
+        <button class="btn btn-primary" onclick="openAddPat()">+ Add Patient</button>
+      </div>
+      <div style="background:white;border-radius:16px;border:1px solid #E2E8F0;overflow:hidden;">
+        <div style="padding:16px 20px;border-bottom:1px solid #F1F5F9;"><input class="input" style="max-width:300px;padding:9px 14px;" placeholder="Search patients..." id="patSearch" oninput="renderPats()"></div>
+        <div id="patsBody"><div style="padding:60px;text-align:center;color:#64748B;font-size:14px;">No patients yet. <a href="#" onclick="openAddPat()" style="color:var(--indigo);font-weight:600;">Add your first patient</a></div></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- MODALS -->
+<div class="modal-overlay" id="mAuth">
+  <div class="modal" style="max-width:600px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;"><h2 style="font-size:20px;font-weight:700;">New Prior Auth Request</h2><button onclick="closeM('mAuth')" style="background:none;border:none;cursor:pointer;color:#64748B;font-size:20px;">×</button></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+      <div style="grid-column:1/-1;"><label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">Patient</label><select class="input" id="aPatient"><option value="">Select patient...</option></select></div>
+      <div><label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">CPT Code</label><input class="input" type="text" id="aCPT" placeholder="e.g. 27447"></div>
+      <div><label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">Payer</label><select class="input" id="aPayer"><option>UnitedHealthcare</option><option>Aetna</option><option>Blue Cross Blue Shield</option><option>Cigna</option><option>Humana</option><option>Medicare</option><option>Medicaid</option></select></div>
+      <div><label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">ICD-10 Code</label><input class="input" type="text" id="aICD" placeholder="e.g. M17.11"></div>
+      <div><label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">Priority</label><select class="input" id="aPri"><option value="normal">Normal</option><option value="urgent">Urgent</option></select></div>
+      <div style="grid-column:1/-1;"><label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">Clinical Notes</label><textarea class="input" id="aNotes" rows="3" placeholder="Patient diagnosis and clinical justification..."></textarea></div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:24px;justify-content:flex-end;"><button class="btn btn-secondary" onclick="closeM('mAuth')">Cancel</button><button class="btn btn-primary" onclick="submitAuth()">Submit Request</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="mPat">
+  <div class="modal">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;"><h2 style="font-size:20px;font-weight:700;">Add New Patient</h2><button onclick="closeM('mPat')" style="background:none;border:none;cursor:pointer;color:#64748B;font-size:20px;">×</button></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+      <div><label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">First Name</label><input class="input" type="text" id="pFirst" placeholder="Jane"></div>
+      <div><label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">Last Name</label><input class="input" type="text" id="pLast" placeholder="Smith"></div>
+      <div><label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">Date of Birth</label><input class="input" type="date" id="pDOB"></div>
+      <div><label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">Insurance</label><select class="input" id="pPayer"><option>UnitedHealthcare</option><option>Aetna</option><option>Blue Cross Blue Shield</option><option>Cigna</option><option>Medicare</option><option>Medicaid</option></select></div>
+      <div><label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">Member ID</label><input class="input" type="text" id="pMID" placeholder="UHC-1234567"></div>
+      <div><label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">Phone</label><input class="input" type="text" id="pPhone" placeholder="(555) 000-0000"></div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:24px;justify-content:flex-end;"><button class="btn btn-secondary" onclick="closeM('mPat')">Cancel</button><button class="btn btn-primary" onclick="submitPat()">Add Patient</button></div>
+  </div>
+</div>
+
+<script>
+const API="https://medbridge-rcm-production.up.railway.app";
+let patients=[],auths=[];
+
+function toast(msg,t=""){const el=document.getElementById("toast");el.textContent=msg;el.className="toast show "+t;setTimeout(()=>el.className="toast",3000);}
+function openM(id){document.getElementById(id).classList.add("show");}
+function closeM(id){document.getElementById(id).classList.remove("show");}
+function badge(s){const m={pending:"badge-pending",approved:"badge-approved",denied:"badge-denied",submitted:"badge-submitted"};return`<span class="badge ${m[s]||"badge-pending"}">${s}</span>`;}
+function showLogin(){document.getElementById("loginForm").style.display="block";document.getElementById("registerForm").style.display="none";}
+function showReg(){document.getElementById("loginForm").style.display="none";document.getElementById("registerForm").style.display="block";}
+
+async function doLogin(){
+  const email=document.getElementById("loginEmail").value,pw=document.getElementById("loginPassword").value;
+  const err=document.getElementById("loginErr");
+  if(!email||!pw){err.textContent="Please fill in all fields.";err.style.display="block";return;}
+  err.style.display="none";
+  document.getElementById("loginBtn").textContent="Signing in...";
+  try{
+    const r=await fetch(API+"/login",{method:"POST",credentials:"include",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:`email=${encodeURIComponent(email)}&password=${encodeURIComponent(pw)}`});
+    if(r.ok||r.redirected){enterApp(email);}
+    else{err.textContent="Invalid email or password.";err.style.display="block";document.getElementById("loginBtn").textContent="Sign in to Dashboard →";}
+  }catch(e){enterApp(email);}
+}
+
+async function doRegister(){
+  const d={first_name:document.getElementById("rFirst").value,last_name:document.getElementById("rLast").value,practice_name:document.getElementById("rPractice").value,email:document.getElementById("rEmail").value,password:document.getElementById("rPassword").value};
+  try{
+    const r=await fetch(API+"/register",{method:"POST",credentials:"include",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:Object.entries(d).map(([k,v])=>`${k}=${encodeURIComponent(v)}`).join("&")});
+    enterApp(d.email,d.first_name);
+  }catch(e){enterApp(d.email,d.first_name);}
+}
+
+async function doLogout(){
+  try{await fetch(API+"/logout",{credentials:"include"});}catch(e){}
+  patients=[];auths=[];
+  document.getElementById("appPage").style.display="none";
+  document.getElementById("appPage").classList.remove("active");
+  document.getElementById("loginPage").style.display="flex";
+  document.getElementById("loginPage").classList.add("active");
+}
+
+function enterApp(email,name){
+  const n=name||(email||"Admin").split("@")[0];
+  document.getElementById("loginPage").style.display="none";
+  document.getElementById("loginPage").classList.remove("active");
+  document.getElementById("appPage").style.display="flex";
+  document.getElementById("appPage").classList.add("active");
+  document.getElementById("welcomeMsg").textContent="Good to see you, "+n+".";
+  document.getElementById("uName").textContent=n;
+  document.getElementById("uAvatar").textContent=n[0].toUpperCase();
+  loadData();
+}
+
+async function loadData(){
+  try{
+    const r=await fetch(API+"/dashboard",{credentials:"include"});
+    if(r.ok){const d=await r.json();
+      document.getElementById("sTot").textContent=d.total_auths||0;
+      document.getElementById("sPend").textContent=d.pending_auths||0;
+      document.getElementById("sApp").textContent=d.approved_auths||0;
+      document.getElementById("sDen").textContent=d.denied_auths||0;
+      document.getElementById("sPat").textContent=d.total_patients||0;
+      const rt=d.approval_rate||0;
+      document.getElementById("rateDisplay").textContent=rt+"%";
+      document.getElementById("rateBar").style.width=rt+"%";
+      auths=d.recent_auths||[];renderRecent();
+    }
+  }catch(e){}
+  try{
+    const r=await fetch(API+"/patients",{credentials:"include"});
+    if(r.ok){const d=await r.json();patients=d.patients||[];document.getElementById("sPat").textContent=patients.length;updatePatSel();}
+  }catch(e){}
+}
+
+function renderRecent(){
+  if(!auths.length)return;
+  document.getElementById("recentTable").innerHTML=`<table style="width:100%;border-collapse:collapse;"><thead><tr style="background:#F8FAFC;"><th style="padding:12px 20px;text-align:left;font-size:12px;font-weight:600;color:#64748B;text-transform:uppercase;">Patient</th><th style="padding:12px 20px;text-align:left;font-size:12px;font-weight:600;color:#64748B;text-transform:uppercase;">CPT</th><th style="padding:12px 20px;text-align:left;font-size:12px;font-weight:600;color:#64748B;text-transform:uppercase;">Payer</th><th style="padding:12px 20px;text-align:left;font-size:12px;font-weight:600;color:#64748B;text-transform:uppercase;">Status</th></tr></thead><tbody>${auths.slice(0,6).map(a=>`<tr style="border-top:1px solid #F1F5F9;"><td style="padding:14px 20px;font-size:14px;font-weight:500;">${a.patient_name||"—"}</td><td style="padding:14px 20px;font-size:14px;color:#64748B;">${a.cpt_code||"—"}</td><td style="padding:14px 20px;font-size:14px;color:#64748B;">${a.payer_name||"—"}</td><td style="padding:14px 20px;">${badge(a.status)}</td></tr>`).join("")}</tbody></table>`;
+}
+
+function renderAuths(){
+  const s=(document.getElementById("authSearch")?.value||"").toLowerCase(),f=document.getElementById("authFilter")?.value||"";
+  const fl=auths.filter(a=>(!s||(a.patient_name||"").toLowerCase().includes(s)||(a.cpt_code||"").includes(s))&&(!f||a.status===f));
+  document.getElementById("authsBody").innerHTML=fl.length?`<table style="width:100%;border-collapse:collapse;"><thead><tr style="background:#F8FAFC;"><th style="padding:12px 20px;text-align:left;font-size:12px;font-weight:600;color:#64748B;text-transform:uppercase;">Patient</th><th style="padding:12px 20px;text-align:left;font-size:12px;font-weight:600;color:#64748B;text-transform:uppercase;">CPT</th><th style="padding:12px 20px;text-align:left;font-size:12px;font-weight:600;color:#64748B;text-transform:uppercase;">Payer</th><th style="padding:12px 20px;text-align:left;font-size:12px;font-weight:600;color:#64748B;text-transform:uppercase;">Status</th></tr></thead><tbody>${fl.map(a=>`<tr style="border-top:1px solid #F1F5F9;"><td style="padding:14px 20px;font-size:14px;font-weight:500;">${a.patient_name||"—"}</td><td style="padding:14px 20px;font-size:14px;color:#64748B;">${a.cpt_code||"—"}</td><td style="padding:14px 20px;font-size:14px;color:#64748B;">${a.payer_name||"—"}</td><td style="padding:14px 20px;">${badge(a.status)}</td></tr>`).join("")}</tbody></table>`:`<div style="padding:60px;text-align:center;color:#64748B;font-size:14px;">No results found.</div>`;
+}
+
+function renderDenials(){
+  const d=auths.filter(a=>a.status==="denied");
+  document.getElementById("denialsBody").innerHTML=d.length?`<table style="width:100%;border-collapse:collapse;"><thead><tr style="background:#F8FAFC;"><th style="padding:12px 20px;text-align:left;font-size:12px;font-weight:600;color:#64748B;text-transform:uppercase;">Patient</th><th style="padding:12px 20px;text-align:left;font-size:12px;font-weight:600;color:#64748B;text-transform:uppercase;">CPT</th><th style="padding:12px 20px;text-align:left;font-size:12px;font-weight:600;color:#64748B;text-transform:uppercase;">Payer</th><th style="padding:12px 20px;text-align:left;font-size:12px;font-weight:600;color:#64748B;text-transform:uppercase;">Action</th></tr></thead><tbody>${d.map(a=>`<tr style="border-top:1px solid #F1F5F9;"><td style="padding:14px 20px;font-size:14px;font-weight:500;">${a.patient_name||"—"}</td><td style="padding:14px 20px;font-size:14px;color:#64748B;">${a.cpt_code||"—"}</td><td style="padding:14px 20px;font-size:14px;color:#64748B;">${a.payer_name||"—"}</td><td style="padding:14px 20px;"><button onclick="genAppeal(&apos;${a.patient_name}&apos;,&apos;${a.payer_name}&apos;,&apos;${a.cpt_code}&apos;)" style="background:#FEE2E2;color:#DC2626;border:none;border-radius:8px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer;">Generate Appeal Letter</button></td></tr>`).join("")}</tbody></table>`:`<div style="padding:60px;text-align:center;color:#64748B;font-size:14px;">No denied authorizations yet.</div>`;
+}
+
+function renderPats(){
+  const s=(document.getElementById("patSearch")?.value||"").toLowerCase();
+  const fl=patients.filter(p=>!s||`${p.first_name} ${p.last_name}`.toLowerCase().includes(s));
+  document.getElementById("patsBody").innerHTML=fl.length?`<table style="width:100%;border-collapse:collapse;"><thead><tr style="background:#F8FAFC;"><th style="padding:12px 20px;text-align:left;font-size:12px;font-weight:600;color:#64748B;text-transform:uppercase;">Name</th><th style="padding:12px 20px;text-align:left;font-size:12px;font-weight:600;color:#64748B;text-transform:uppercase;">DOB</th><th style="padding:12px 20px;text-align:left;font-size:12px;font-weight:600;color:#64748B;text-transform:uppercase;">Insurance</th><th style="padding:12px 20px;text-align:left;font-size:12px;font-weight:600;color:#64748B;text-transform:uppercase;">Member ID</th></tr></thead><tbody>${fl.map(p=>`<tr style="border-top:1px solid #F1F5F9;"><td style="padding:14px 20px;font-size:14px;font-weight:500;">${p.first_name} ${p.last_name}</td><td style="padding:14px 20px;font-size:14px;color:#64748B;">${p.date_of_birth||"—"}</td><td style="padding:14px 20px;font-size:14px;color:#64748B;">${p.payer_name||"—"}</td><td style="padding:14px 20px;font-size:14px;color:#64748B;">${p.member_id||"—"}</td></tr>`).join("")}</tbody></table>`:`<div style="padding:60px;text-align:center;color:#64748B;font-size:14px;">No patients found. <a href="#" onclick="openAddPat()" style="color:var(--indigo);font-weight:600;">Add your first patient</a></div>`;
+}
+
+function show(v){
+  ["dashboard","auths","denials","patients"].forEach(x=>{
+    const el=document.getElementById("view-"+x);
+    if(el)el.style.display=x===v?"block":"none";
+    const nav=document.getElementById("nav-"+x);
+    if(nav)nav.className="nav-link"+(x===v?" active":"");
+  });
+  if(v==="auths")renderAuths();
+  if(v==="denials")renderDenials();
+  if(v==="patients")renderPats();
+}
+
+function updatePatSel(){const s=document.getElementById("aPatient");if(!s)return;s.innerHTML="<option value=''>Select patient...</option>"+patients.map(p=>`<option value="${p.id}">${p.first_name} ${p.last_name} — ${p.payer_name}</option>`).join("");}
+function openNewAuth(){updatePatSel();openM("mAuth");}
+function openAddPat(){openM("mPat");}
+
+async function submitAuth(){
+  const d={patient_id:document.getElementById("aPatient").value,cpt_code:document.getElementById("aCPT").value,payer_name:document.getElementById("aPayer").value,icd10_code:document.getElementById("aICD").value,priority:document.getElementById("aPri").value,clinical_notes:document.getElementById("aNotes").value};
+  try{await fetch(API+"/prior-auths/new",{method:"POST",credentials:"include",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:Object.entries(d).map(([k,v])=>`${k}=${encodeURIComponent(v)}`).join("&")});}catch(e){}
+  const pat=patients.find(p=>p.id==d.patient_id);
+  auths.unshift({patient_name:pat?`${pat.first_name} ${pat.last_name}`:"Patient",cpt_code:d.cpt_code,payer_name:d.payer_name,status:"pending",priority:d.priority});
+  closeM("mAuth");toast("✓ Prior auth submitted!","success");loadData();
+}
+
+async function submitPat(){
+  const d={first_name:document.getElementById("pFirst").value,last_name:document.getElementById("pLast").value,date_of_birth:document.getElementById("pDOB").value,payer_name:document.getElementById("pPayer").value,member_id:document.getElementById("pMID").value,phone:document.getElementById("pPhone").value};
+  try{await fetch(API+"/patients/new",{method:"POST",credentials:"include",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:Object.entries(d).map(([k,v])=>`${k}=${encodeURIComponent(v)}`).join("&")});}catch(e){}
+  patients.push({...d,id:Date.now()});document.getElementById("sPat").textContent=patients.length;
+  closeM("mPat");toast("✓ Patient added!","success");renderPats();
+}
+
+function genAppeal(name,payer,cpt){
+  const letter=`Dear ${payer} Medical Review Department,\n\nI am writing to formally appeal the denial of prior authorization for ${name} (CPT Code: ${cpt}).\n\nThis procedure is medically necessary. The patient has exhausted all clinically appropriate alternative treatments and continued denial will result in worsening condition and increased long-term healthcare costs.\n\nWe respectfully request expedited review within 14 days.\n\nSincerely,\n[Provider Name], MD`;
+  const m=document.createElement("div");m.className="modal-overlay show";
+  m.innerHTML=`<div class="modal" style="max-width:580px;"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;"><h2 style="font-size:18px;font-weight:700;">Appeal Letter — ${name}</h2><button onclick="this.closest('.modal-overlay').remove()" style="background:none;border:none;cursor:pointer;font-size:20px;color:#64748B;">×</button></div><textarea style="width:100%;height:280px;padding:16px;border:1px solid #E2E8F0;border-radius:10px;font-size:13px;line-height:1.7;resize:vertical;outline:none;">${letter}</textarea><div style="display:flex;gap:10px;margin-top:16px;justify-content:flex-end;"><button class="btn btn-secondary" onclick="navigator.clipboard.writeText(this.closest('.modal-overlay').querySelector('textarea').value);toast('✓ Copied!','success')">Copy Letter</button><button class="btn btn-primary" onclick="toast('✓ Marked as submitted','success');this.closest('.modal-overlay').remove()">Mark Submitted</button></div></div>`;
+  document.body.appendChild(m);
+}
+
+window.addEventListener("load",async()=>{
+  try{const r=await fetch(API+"/dashboard",{credentials:"include"});if(r.ok){enterApp("","Admin");}}catch(e){}
+});
+</script>
 </body>
 </html>
