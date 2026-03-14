@@ -383,9 +383,9 @@ function show(v){
     const nav=document.getElementById("nav-"+x);
     if(nav)nav.className="nav-link"+(x===v?" active":"");
   });
-  if(v==="auths")renderAuths();
-  if(v==="denials")renderDenials();
-  if(v==="patients")renderPats();
+  if(v==="auths"){loadAuths();}
+  if(v==="denials"){loadAuths();}
+  if(v==="patients"){renderPats();}
 }
 
 function updatePatSel(){const s=document.getElementById("aPatient");if(!s)return;s.innerHTML="<option value=''>Select patient...</option>"+patients.map(p=>`<option value="${p.id}">${p.first_name} ${p.last_name} — ${p.payer_name}</option>`).join("");}
