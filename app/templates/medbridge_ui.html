@@ -255,9 +255,18 @@ async function doLogin(){
   document.getElementById("loginBtn").textContent="Signing in...";
   try{
     const r=await fetch(API+"/login",{method:"POST",credentials:"include",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:`email=${encodeURIComponent(email)}&password=${encodeURIComponent(pw)}`});
-    if(r.ok||r.redirected){enterApp(email);}
-    else{err.textContent="Invalid email or password.";err.style.display="block";document.getElementById("loginBtn").textContent="Sign in to Dashboard →";}
-  }catch(e){enterApp(email);}
+    if(r.ok||r.redirected){
+      const check=await fetch(API+"/api/dashboard",{credentials:"include"});
+      if(check.ok){enterApp(email);}
+      else{err.textContent="Invalid email or password.";err.style.display="block";document.getElementById("loginBtn").textContent="Sign in to Dashboard →";}
+    } else{
+      err.textContent="Invalid email or password.";err.style.display="block";
+      document.getElementById("loginBtn").textContent="Sign in to Dashboard →";
+    }
+  }catch(e){
+    err.textContent="Login failed. Please try again.";err.style.display="block";
+    document.getElementById("loginBtn").textContent="Sign in to Dashboard →";
+  }
 }
 
 async function doRegister(){
