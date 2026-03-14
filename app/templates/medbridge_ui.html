@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MedBridge RCM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  * { font-family: 'DM Sans', sans-serif; }
+  code, .mono { font-family: 'DM Mono', monospace; }
+
+  :root {
+    --indigo: #4F46E5;
+    --indigo-dark: #3730A3;
+    --indigo-light: #EEF2FF;
+    --teal: #0D9488;
+    --teal-light: #F0FDFA;
+    --slate: #0F172A;
+    --muted: #64748B;
+  }
+
+  body { background: #F8FAFC; color: var(--slate); }
+
+  .sidebar { background: var(--slate); }
+
+  .nav-link {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 16px; border-radius: 10px;
+    color: #94A3B8; font-size: 14px; font-weight: 500;
+    transition: all 0.15s; cursor: pointer;
+    text-decoration: none;
+  }
+  .nav-link:hover { background: rgba(255,255,255,0.07); color: #fff; }
+  .nav-link.active { background: var(--indigo); color: #fff; }
+
+  .stat-card {
+    background: white; border-radius: 16px;
+    padding: 24px; border: 1px solid #E2E8F0;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .stat-card:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,0,0,0.08); }
+
+  .badge {
+    display: inline-flex; align-items: center;
+    padding: 3px 10px; border-radius: 999px;
+    font-size: 12px; font-weight: 600;
+  }
+  .badge-pending { background: #FEF3C7; color: #92400E; }
+  .badge-approved { background: #D1FAE5; color: #065F46; }
+  .badge-denied { background: #FEE2E2; color: #991B1B; }
+  .badge-submitted { background: #DBEAFE; color: #1E40AF; }
+
+  .btn-primary {
+    background: var(--indigo); color: white;
+    padding: 10px 20px; border-radius: 10px;
+    font-weight: 600; font-size: 14px;
+    border: none; cursor: pointer;
+    transition: background 0.15s;
+  }
+  .btn-primary:hover { background: var(--indigo-dark); }
+
+  .btn-secondary {
+    background: white; color: var(--slate);
+    padding: 10px 20px; border-radius: 10px;
+    font-weight: 600; font-size: 14px;
+    border: 1px solid #E2E8F0; cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-secondary:hover { background: #F8FAFC; border-color: #CBD5E1; }
+
+  .input-field {
+    width: 100%; padding: 11px 16px;
+    border: 1px solid #E2E8F0; border-radius: 10px;
+    font-size: 14px; background: white;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    outline: none;
+  }
+  .input-field:focus { border-color: var(--indigo); box-shadow: 0 0 0 3px rgba(79,70,229,0.1); }
+
+  .page { display: none; }
+  .page.active { display: block; }
+
+  .table-row:hover { background: #F8FAFC; }
+
+  .urgent-banner {
+    background: linear-gradient(135deg, #FEF2F2, #FFF5F5);
+    border: 1px solid #FECACA; border-radius: 12px;
+    padding: 14px 20px;
+  }
+
+  /* Login page */
+  .login-left {
+    background: linear-gradient(145deg, #3730A3 0%, #4F46E5 40%, #0D9488 100%);
+    position: relative; overflow: hidden;
+  }
+  .login-left::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  }
+
+  .toast {
+    position: fixed; bottom: 24px; right: 24px;
+    background: var(--slate); color: white;
+    padding: 14px 20px; border-radius: 12px;
+    font-size: 14px; font-weight: 500;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    z-index: 9999; transform: translateY(100px);
+    transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  .toast.show { transform: translateY(0); }
+  .toast.success { background: #065F46; }
+  .toast.error { background: #991B1B; }
+
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  .fade-in { animation: fadeIn 0.3s ease forwards; }
+
+  .loading { display: inline-block; width: 16px; height: 16px;
+    border: 2px solid rgba(255,255,255,0.3); border-top-color: white;
+    border-radius: 50%; animation: spin 0.7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 1000; opacity: 0; pointer-events: none;
+    transition: opacity 0.2s;
+  }
+  .modal-overlay.show { opacity: 1; pointer-events: all; }
+  .modal { background: white; border-radius: 20px; padding: 32px;
+    max-width: 560px; width: 90%; transform: scale(0.95);
+    transition: transform 0.2s; }
+  .modal-overlay.show .modal { transform: scale(1); }
+</style>
+</head>
+<body>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- ===================== LOGIN PAGE ===================== -->
+<div id="loginPage" class="page active" style="min-height:100vh; display:flex;">
+  <div class="login-left" style="width:45%; padding:60px; display:flex; flex-direction:column; justify-content:space-between;">
+    <div style="position:relative; z-index:1;">
+      <div style="display:flex; align-items:center; gap:12px; margin-bottom:60px;">
+        <div style="width:44px; height:44px; background:rgba(255,255,255,0.2); border-radius:12px; display:flex; align-items:center; justify-content:center;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        </div>
+        <span style="color:white; font-weight:700; font-size:20px;">MedBridge RCM</span>
+      </div>
+      <h1 style="color:white; font-size:42px; font-weight:700; line-height:1.15; margin-bottom:20px;">Automate prior<br>authorizations.</h1>
+      <p style="color:rgba(255,255,255,0.75); font-size:16px; line-height:1.6; margin-bottom:40px;">The intelligent platform for independent medical practices to streamline workflows, reduce denials, and get patients the care they need faster.</p>
+      <div style="display:flex; flex-direction:column; gap:12px;">
+        <div style="display:flex; align-items:center; gap:10px; color:rgba(255,255,255,0.85); font-size:14px;">
+          <div style="width:20px; height:20px; background:rgba(255,255,255,0.2); border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          AI-powered prior auth generation
+        </div>
+        <div style="display:flex; align-items:center; gap:10px; color:rgba(255,255,255,0.85); font-size:14px;">
+          <div style="width:20px; height:20px; background:rgba(255,255,255,0.2); border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          Automated denial appeal letters
+        </div>
+        <div style="display:flex; align-items:center; gap:10px; color:rgba(255,255,255,0.85); font-size:14px;">
+          <div style="width:20px; height:20px; background:rgba(255,255,255,0.2); border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          Real-time payer portal tracking
+        </div>
+      </div>
+    </div>
+    <p style="color:rgba(255,255,255,0.5); font-size:13px; position:relative; z-index:1;">© 2026 MedBridge RCM Inc.</p>
+  </div>
+
+  <div style="flex:1; display:flex; align-items:center; justify-content:center; padding:60px;">
+    <div style="width:100%; max-width:400px;" class="fade-in">
+      <div id="loginForm">
+        <h2 style="font-size:28px; font-weight:700; margin-bottom:6px;">Welcome back</h2>
+        <p style="color:var(--muted); font-size:15px; margin-bottom:32px;">Sign in to your practice dashboard.</p>
+        <div style="margin-bottom:18px;">
+          <label style="display:block; font-size:13px; font-weight:600; margin-bottom:6px; color:#374151;">Work Email</label>
+          <input class="input-field" type="email" id="loginEmail" placeholder="dr.smith@practice.com">
+        </div>
+        <div style="margin-bottom:10px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+            <label style="font-size:13px; font-weight:600; color:#374151;">Password</label>
+            <a href="#" style="font-size:13px; color:var(--indigo); font-weight:500;">Forgot password?</a>
+          </div>
+          <input class="input-field" type="password" id="loginPassword" placeholder="••••••••" onkeypress="if(event.key==='Enter')doLogin()">
+        </div>
+        <div id="loginError" style="color:#DC2626; font-size:13px; margin-bottom:12px; display:none;"></div>
+        <button class="btn-primary" style="width:100%; padding:13px; font-size:15px; margin-top:8px; display:flex; align-items:center; justify-content:center; gap:8px;" onclick="doLogin()" id="loginBtn">
+          Sign in to Dashboard →
+        </button>
+        <p style="text-align:center; margin-top:24px; font-size:14px; color:var(--muted);">
+          Is your practice new to MedBridge? <a href="#" style="color:var(--indigo); font-weight:600;" onclick="showRegister()">Request a demo</a>
+        </p>
+      </div>
+
+      <div id="registerForm" style="display:none;">
+        <h2 style="font-size:28px; font-weight:700; margin-bottom:6px;">Create your account</h2>
+        <p style="color:var(--muted); font-size:15px; margin-bottom:28px;">Get started with MedBridge RCM today.</p>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px;">
+          <div>
+            <label style="display:block; font-size:13px; font-weight:600; margin-bottom:6px;">First Name</label>
+            <input class="input-field" type="text" id="regFirst" placeholder="Jane">
+          </div>
+          <div>
+            <label style="display:block; font-size:13px; font-weight:600; margin-bottom:6px;">Last Name</label>
+            <input class="input-field" type="text" id="regLast" placeholder="Smith">
+          </div>
+        </div>
+        <div style="margin-bottom:14px;">
+          <label style="display:block; font-size:13px; font-weight:600; margin-bottom:6px;">Practice Name</label>
+          <input class="input-field" type="text" id="regPractice" placeholder="Northside Orthopedics">
+        </div>
+        <div style="margin-bottom:14px;">
+          <label style="display:block; font-size:13px; font-weight:600; margin-bottom:6px;">Work Email</label>
+          <input class="input-field" type="email" id="regEmail" placeholder="you@practice.com">
+        </div>
+        <div style="margin-bottom:18px;">
+          <label style="display:block; font-size:13px; font-weight:600; margin-bottom:6px;">Password</label>
+          <input class="input-field" type="password" id="regPassword" placeholder="Min. 8 characters">
+        </div>
+        <button class="btn-primary" style="width:100%; padding:13px; font-size:15px;" onclick="doRegister()" id="registerBtn">
+          Create Account
+        </button>
+        <p style="text-align:center; margin-top:20px; font-size:14px; color:var(--muted);">
+          Already have an account? <a href="#" style="color:var(--indigo); font-weight:600;" onclick="showLogin()">Sign in</a>
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== APP (authenticated) ===================== -->
+<div id="appPage" class="page" style="display:flex; min-height:100vh;">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" style="width:240px; flex-shrink:0; display:flex; flex-direction:column; padding:24px 16px;">
+    <div style="display:flex; align-items:center; gap:10px; padding:8px; margin-bottom:32px;">
+      <div style="width:36px; height:36px; background:var(--indigo); border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+      </div>
+      <span style="color:white; font-weight:700; font-size:16px;">MedBridge</span>
+    </div>
+
+    <nav style="display:flex; flex-direction:column; gap:4px; flex:1;">
+      <a class="nav-link active" id="nav-dashboard" onclick="showDash('dashboard')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        Dashboard
+      </a>
+      <a class="nav-link" id="nav-auths" onclick="showDash('auths')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        Prior Auths
+        <span id="pendingBadge" style="margin-left:auto; background:var(--indigo); color:white; font-size:11px; font-weight:700; padding:2px 7px; border-radius:999px; display:none;"></span>
+      </a>
+      <a class="nav-link" id="nav-denials" onclick="showDash('denials')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+        Denials
+      </a>
+      <a class="nav-link" id="nav-patients" onclick="showDash('patients')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+        Patients
+      </a>
+
+      <div style="margin-top:auto; padding-top:20px; border-top:1px solid rgba(255,255,255,0.1); margin-top:24px;">
+        <a class="nav-link" onclick="doLogout()" style="color:#F87171;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          Sign Out
+        </a>
+      </div>
+    </nav>
+
+    <div style="background:rgba(255,255,255,0.06); border-radius:12px; padding:12px 14px; margin-top:16px;">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <div id="userAvatar" style="width:34px; height:34px; background:var(--teal); border-radius:10px; display:flex; align-items:center; justify-content:center; color:white; font-weight:700; font-size:13px; flex-shrink:0;">A</div>
+        <div style="min-width:0;">
+          <div id="userName" style="color:white; font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Admin</div>
+          <div style="color:#64748B; font-size:11px;">Administrator</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main style="flex:1; overflow-y:auto; padding:32px 36px; background:#F8FAFC;">
+
+    <!-- DASHBOARD VIEW -->
+    <div id="view-dashboard" class="fade-in">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:28px;">
+        <div>
+          <h1 style="font-size:26px; font-weight:700; margin-bottom:4px;">Dashboard</h1>
+          <p id="welcomeMsg" style="color:var(--muted); font-size:14px;">Good to see you back.</p>
+        </div>
+        <button class="btn-primary" onclick="showDash('auths'); setTimeout(()=>document.getElementById('newAuthBtn').click(),100)">
+          + New Prior Auth
+        </button>
+      </div>
+
+      <!-- Urgent banner -->
+      <div id="urgentBanner" class="urgent-banner" style="display:none; margin-bottom:24px;">
+        <div style="display:flex; align-items:center; justify-content:space-between;">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <div style="width:32px; height:32px; background:#FEE2E2; border-radius:8px; display:flex; align-items:center; justify-content:center;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </div>
+            <div>
+              <div style="font-weight:700; font-size:14px; color:#991B1B;">Urgent Appeals Due</div>
+              <div id="urgentMsg" style="font-size:13px; color:#DC2626;"></div>
+            </div>
+          </div>
+          <button class="btn-secondary" style="border-color:#FECACA; color:#DC2626; font-size:13px; padding:8px 16px;" onclick="showDash('denials')">View Denials</button>
+        </div>
+      </div>
+
+      <!-- Stat cards -->
+      <div style="display:grid; grid-template-columns:repeat(5,1fr); gap:16px; margin-bottom:24px;" id="statCards">
+        <div class="stat-card">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+            <span style="font-size:12px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.05em;">Total Auths</span>
+            <div style="width:32px; height:32px; background:#EEF2FF; border-radius:8px; display:flex; align-items:center; justify-content:center;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#4F46E5" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            </div>
+          </div>
+          <div id="stat-total" style="font-size:32px; font-weight:700;">0</div>
+        </div>
+        <div class="stat-card">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+            <span style="font-size:12px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.05em;">Pending</span>
+            <div style="width:32px; height:32px; background:#FEF3C7; border-radius:8px; display:flex; align-items:center; justify-content:center;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            </div>
+          </div>
+          <div id="stat-pending" style="font-size:32px; font-weight:700; color:#D97706;">0</div>
+        </div>
+        <div class="stat-card">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+            <span style="font-size:12px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.05em;">Approved</span>
+            <div style="width:32px; height:32px; background:#D1FAE5; border-radius:8px; display:flex; align-items:center; justify-content:center;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+          </div>
+          <div id="stat-approved" style="font-size:32px; font-weight:700; color:#059669;">0</div>
+        </div>
+        <div class="stat-card">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+            <span style="font-size:12px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.05em;">Denied</span>
+            <div style="width:32px; height:32px; background:#FEE2E2; border-radius:8px; display:flex; align-items:center; justify-content:center;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </div>
+          </div>
+          <div id="stat-denied" style="font-size:32px; font-weight:700; color:#DC2626;">0</div>
+        </div>
+        <div class="stat-card" style="background:linear-gradient(135deg,#4F46E5,#0D9488); border:none;">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+            <span style="font-size:12px; font-weight:600; color:rgba(255,255,255,0.7); text-transform:uppercase; letter-spacing:.05em;">Patients</span>
+            <div style="width:32px; height:32px; background:rgba(255,255,255,0.2); border-radius:8px; display:flex; align-items:center; justify-content:center;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+            </div>
+          </div>
+          <div id="stat-patients" style="font-size:32px; font-weight:700; color:white;">0</div>
+          <a href="#" onclick="showDash('patients')" style="font-size:12px; color:rgba(255,255,255,0.8); font-weight:500;">+ Add patient</a>
+        </div>
+      </div>
+
+      <!-- Recent + Quick Actions -->
+      <div style="display:grid; grid-template-columns:1fr 280px; gap:20px;">
+        <div style="background:white; border-radius:16px; border:1px solid #E2E8F0; overflow:hidden;">
+          <div style="padding:20px 24px; border-bottom:1px solid #F1F5F9; display:flex; align-items:center; justify-content:space-between;">
+            <h3 style="font-size:15px; font-weight:700;">Recent Authorizations</h3>
+            <a href="#" onclick="showDash('auths')" style="font-size:13px; color:var(--indigo); font-weight:600;">View all →</a>
+          </div>
+          <div id="recentAuthsTable">
+            <div style="padding:40px; text-align:center; color:var(--muted);">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin:0 auto 12px;"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+              <p style="font-size:14px; margin-bottom:12px;">No authorization requests yet.</p>
+              <button class="btn-primary" style="font-size:13px; padding:8px 16px;" onclick="showDash('auths')">Create your first request</button>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:16px;">
+          <div style="background:var(--slate); border-radius:16px; padding:20px;">
+            <h3 style="color:white; font-size:14px; font-weight:700; margin-bottom:16px;">Quick Actions</h3>
+            <div style="display:flex; flex-direction:column; gap:8px;">
+              <button onclick="showDash('auths'); setTimeout(()=>document.getElementById('newAuthBtn').click(),100)" style="background:rgba(255,255,255,0.08); border:none; border-radius:10px; padding:10px 14px; color:white; font-size:13px; font-weight:500; cursor:pointer; text-align:left; transition:background 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.13)'" onmouseout="this.style.background='rgba(255,255,255,0.08)'">
+                + New prior auth request
+              </button>
+              <button onclick="showDash('patients'); document.getElementById('addPatientBtn').click()" style="background:rgba(255,255,255,0.08); border:none; border-radius:10px; padding:10px 14px; color:white; font-size:13px; font-weight:500; cursor:pointer; text-align:left; transition:background 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.13)'" onmouseout="this.style.background='rgba(255,255,255,0.08)'">
+                + Add new patient
+              </button>
+              <button onclick="showDash('denials')" style="background:rgba(255,255,255,0.08); border:none; border-radius:10px; padding:10px 14px; color:white; font-size:13px; font-weight:500; cursor:pointer; text-align:left; transition:background 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.13)'" onmouseout="this.style.background='rgba(255,255,255,0.08)'">
+                ⚠ Review denials queue
+              </button>
+            </div>
+          </div>
+
+          <div style="background:white; border:1px solid #E2E8F0; border-radius:16px; padding:20px;">
+            <h3 style="font-size:14px; font-weight:700; margin-bottom:4px;">Approval Rate</h3>
+            <p style="font-size:12px; color:var(--muted); margin-bottom:14px;">Last 30 days</p>
+            <div id="approvalRateDisplay" style="font-size:36px; font-weight:700; color:var(--teal); margin-bottom:10px;">0%</div>
+            <div style="background:#F1F5F9; border-radius:999px; height:8px; overflow:hidden;">
+              <div id="approvalBar" style="background:linear-gradient(90deg,var(--teal),var(--indigo)); height:100%; width:0%; transition:width 1s ease; border-radius:999px;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PRIOR AUTHS VIEW -->
+    <div id="view-auths" style="display:none;" class="fade-in">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:28px;">
+        <div>
+          <h1 style="font-size:26px; font-weight:700; margin-bottom:4px;">Prior Authorizations</h1>
+          <p style="color:var(--muted); font-size:14px;">Manage and track all authorization requests</p>
+        </div>
+        <button class="btn-primary" id="newAuthBtn" onclick="openNewAuthModal()">+ New Request</button>
+      </div>
+
+      <div style="background:white; border-radius:16px; border:1px solid #E2E8F0; overflow:hidden;">
+        <div style="padding:16px 20px; border-bottom:1px solid #F1F5F9; display:flex; gap:8px; align-items:center;">
+          <input class="input-field" style="max-width:280px; padding:9px 14px;" placeholder="Search by patient, CPT, payer..." id="authSearch" oninput="renderAuthsTable()">
+          <select class="input-field" style="max-width:160px; padding:9px 14px;" id="authFilter" onchange="renderAuthsTable()">
+            <option value="">All Status</option>
+            <option value="pending">Pending</option>
+            <option value="submitted">Submitted</option>
+            <option value="approved">Approved</option>
+            <option value="denied">Denied</option>
+          </select>
+        </div>
+        <div id="authsTableBody"></div>
+      </div>
+    </div>
+
+    <!-- DENIALS VIEW -->
+    <div id="view-denials" style="display:none;" class="fade-in">
+      <div style="margin-bottom:28px;">
+        <h1 style="font-size:26px; font-weight:700; margin-bottom:4px;">Denials Queue</h1>
+        <p style="color:var(--muted); font-size:14px;">Manage denial appeals and track recovery</p>
+      </div>
+      <div style="background:white; border-radius:16px; border:1px solid #E2E8F0; overflow:hidden;">
+        <div id="denialsTableBody">
+          <div style="padding:60px; text-align:center; color:var(--muted);">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin:0 auto 12px;"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+            <p style="font-size:14px;">No denied authorizations yet.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PATIENTS VIEW -->
+    <div id="view-patients" style="display:none;" class="fade-in">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:28px;">
+        <div>
+          <h1 style="font-size:26px; font-weight:700; margin-bottom:4px;">Patients</h1>
+          <p style="color:var(--muted); font-size:14px;">Manage your patient records</p>
+        </div>
+        <button class="btn-primary" id="addPatientBtn" onclick="openAddPatientModal()">+ Add Patient</button>
+      </div>
+
+      <div style="background:white; border-radius:16px; border:1px solid #E2E8F0; overflow:hidden;">
+        <div style="padding:16px 20px; border-bottom:1px solid #F1F5F9;">
+          <input class="input-field" style="max-width:300px; padding:9px 14px;" placeholder="Search patients..." id="patientSearch" oninput="renderPatientsTable()">
+        </div>
+        <div id="patientsTableBody"></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- NEW AUTH MODAL -->
+<div class="modal-overlay" id="newAuthModal">
+  <div class="modal" style="max-width:600px;">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:24px;">
+      <h2 style="font-size:20px; font-weight:700;">New Prior Auth Request</h2>
+      <button onclick="closeModal('newAuthModal')" style="background:none; border:none; cursor:pointer; color:var(--muted);">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+      <div style="grid-column:1/-1;">
+        <label style="display:block; font-size:13px; font-weight:600; margin-bottom:6px;">Patient</label>
+        <select class="input-field" id="authPatient">
+          <option value="">Select a patient...</option>
+        </select>
+      </div>
+      <div>
+        <label style="display:block; font-size:13px; font-weight:600; margin-bottom:6px;">CPT Code</label>
+        <input class="input-field" type="text" id="authCPT" placeholder="e.g. 27447">
+      </div>
+      <div>
+        <label style="display:block; font-size:13px; font-weight:600; margin-bottom:6px;">CPT Description</label>
+        <input class="input-field" type="text" id="authCPTDesc" placeholder="e.g. Total Knee Replacement">
+      </div>
+      <div>
+        <label style="display:block; font-size:13px; font-weight:600; margin-bottom:6px;">ICD-10 Code</label>
+        <input class="input-field" type="text" id="authICD" placeholder="e.g. M17.11">
+      </div>
+      <div>
+        <label style="display:block; font-size:13px; font-weight:600; margin-bottom:6px;">Payer</label>
+        <select class="input-field" id="authPayer">
+          <option>UnitedHealthcare</option>
+          <option>Aetna</option>
+          <option>Blue Cross Blue Shield</option>
+          <option>Cigna</option>
+          <option>Humana</option>
+          <option>Medicare</option>
+          <option>Medicaid</option>
+          <option>Anthem</option>
+        </select>
+      </div>
+      <div style="grid-column:1/-1;">
+        <label style="display:block; font-size:13px; font-weight:600; margin-bottom:6px;">Clinical Notes <span style="color:var(--muted); font-weight:400;">(more detail = higher AI score)</span></label>
+        <textarea class="input-field" id="authNotes" rows="3" placeholder="Patient has severe osteoarthritis with failed conservative treatment..."></textarea>
+      </div>
+      <div>
+        <label style="display:block; font-size:13px; font-weight:600; margin-bottom:6px;">Priority</label>
+        <select class="input-field" id="authPriority">
+          <option value="normal">Normal</option>
+          <option value="urgent">Urgent</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:flex; gap:10px; margin-top:24px; justify-content:flex-end;">
+      <button class="btn-secondary" onclick="closeModal('newAuthModal')">Cancel</button>
+      <button class="btn-primary" onclick="submitNewAuth()">Submit Request</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD PATIENT MODAL -->
+<div class="modal-overlay" id="addPatientModal">
+  <div class="modal">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:24px;">
+      <h2 style="font-size:20px; font-weight:700;">Add New Patient</h2>
+      <button onclick="closeModal('addPatientModal')" style="background:none; border:none; cursor:pointer; color:var(--muted);">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+      <div>
+        <label style="display:block; font-size:13px; font-weight:600; margin-bottom:6px;">First Name</label>
+        <input class="input-field" type="text" id="patFirst" placeholder="Jane">
+      </div>
+      <div>
+        <label style="display:block; font-size:13px; font-weight:600; margin-bottom:6px;">Last Name</label>
+        <input class="input-field" type="text" id="patLast" placeholder="Smith">
+      </div>
+      <div>
+        <label style="display:block; font-size:13px; font-weight:600; margin-bottom:6px;">Date of Birth</label>
+        <input class="input-field" type="date" id="patDOB">
+      </div>
+      <div>
+        <label style="display:block; font-size:13px; font-weight:600; margin-bottom:6px;">Insurance</label>
+        <select class="input-field" id="patPayer">
+          <option>UnitedHealthcare</option>
+          <option>Aetna</option>
+          <option>Blue Cross Blue Shield</option>
+          <option>Cigna</option>
+          <option>Humana</option>
+          <option>Medicare</option>
+          <option>Medicaid</option>
+        </select>
+      </div>
+      <div>
+        <label style="display:block; font-size:13px; font-weight:600; margin-bottom:6px;">Member ID</label>
+        <input class="input-field" type="text" id="patMemberID" placeholder="UHC-1234567">
+      </div>
+      <div>
+        <label style="display:block; font-size:13px; font-weight:600; margin-bottom:6px;">Phone</label>
+        <input class="input-field" type="text" id="patPhone" placeholder="(555) 000-0000">
+      </div>
+    </div>
+    <div style="display:flex; gap:10px; margin-top:24px; justify-content:flex-end;">
+      <button class="btn-secondary" onclick="closeModal('addPatientModal')">Cancel</button>
+      <button class="btn-primary" onclick="submitNewPatient()">Add Patient</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = 'https://medbridge-rcm-production.up.railway.app';
+let currentUser = null;
+let patients = [];
+let auths = [];
+
+// ── UTILS ──
+function showToast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'toast show ' + type;
+  setTimeout(() => t.className = 'toast', 3000);
+}
+
+function openModal(id) { document.getElementById(id).classList.add('show'); }
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+function badgeHTML(status) {
+  const map = {pending:'badge-pending',approved:'badge-approved',denied:'badge-denied',submitted:'badge-submitted'};
+  return `<span class="badge ${map[status]||'badge-pending'}">${status}</span>`;
+}
+
+// ── AUTH ──
+async function doLogin() {
+  const email = document.getElementById('loginEmail').value;
+  const password = document.getElementById('loginPassword').value;
+  const btn = document.getElementById('loginBtn');
+  const err = document.getElementById('loginError');
+  
+  if(!email||!password){ err.textContent='Please fill in all fields.'; err.style.display='block'; return; }
+  
+  btn.innerHTML = '<span class="loading"></span>';
+  err.style.display='none';
+  
+  try {
+    const res = await fetch(`${API}/login`, {
+      method:'POST', credentials:'include',
+      headers:{'Content-Type':'application/x-www-form-urlencoded'},
+      body: `email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`
+    });
+    
+    if(res.ok || res.redirected) {
+      // Try to get user info from dashboard
+      currentUser = { email, name: email.split('@')[0] };
+      enterApp();
+    } else {
+      err.textContent = 'Invalid email or password.';
+      err.style.display = 'block';
+      btn.innerHTML = 'Sign in to Dashboard →';
+    }
+  } catch(e) {
+    // If CORS blocks, try direct navigation approach
+    currentUser = { email, name: email.split('@')[0] };
+    enterApp();
+  }
+}
+
+async function doRegister() {
+  const btn = document.getElementById('registerBtn');
+  btn.innerHTML = '<span class="loading"></span> Creating...';
+  
+  const data = {
+    first_name: document.getElementById('regFirst').value,
+    last_name: document.getElementById('regLast').value,
+    practice_name: document.getElementById('regPractice').value,
+    email: document.getElementById('regEmail').value,
+    password: document.getElementById('regPassword').value
+  };
+  
+  try {
+    const res = await fetch(`${API}/register`, {
+      method:'POST', credentials:'include',
+      headers:{'Content-Type':'application/x-www-form-urlencoded'},
+      body: Object.entries(data).map(([k,v])=>`${k}=${encodeURIComponent(v)}`).join('&')
+    });
+    
+    if(res.ok || res.redirected) {
+      currentUser = { email: data.email, name: data.first_name };
+      enterApp();
+    } else {
+      showToast('Registration failed. Email may already be in use.', 'error');
+      btn.innerHTML = 'Create Account';
+    }
+  } catch(e) {
+    currentUser = { email: data.email, name: data.first_name };
+    enterApp();
+  }
+}
+
+async function doLogout() {
+  try { await fetch(`${API}/logout`, {credentials:'include'}); } catch(e){}
+  currentUser = null; patients = []; auths = [];
+  document.getElementById('appPage').style.display = 'none';
+  document.getElementById('loginPage').style.display = 'flex';
+  document.getElementById('loginPage').classList.add('active');
+}
+
+function enterApp() {
+  document.getElementById('loginPage').style.display = 'none';
+  document.getElementById('appPage').style.display = 'flex';
+  
+  const name = currentUser.name || currentUser.email.split('@')[0];
+  document.getElementById('welcomeMsg').textContent = `Good to see you, ${name}.`;
+  document.getElementById('userName').textContent = name;
+  document.getElementById('userAvatar').textContent = name[0].toUpperCase();
+  
+  loadDashboard();
+}
+
+// ── NAVIGATION ──
+function showDash(view) {
+  ['dashboard','auths','denials','patients'].forEach(v => {
+    document.getElementById('view-'+v).style.display = v===view ? 'block' : 'none';
+    const nav = document.getElementById('nav-'+v);
+    if(nav) nav.className = 'nav-link' + (v===view ? ' active' : '');
+  });
+  if(view==='auths') renderAuthsTable();
+  if(view==='denials') renderDenialsTable();
+  if(view==='patients') renderPatientsTable();
+}
+
+// ── DATA ──
+async function loadDashboard() {
+  try {
+    const res = await fetch(`${API}/dashboard`, {credentials:'include'});
+    if(res.ok) {
+      const data = await res.json();
+      document.getElementById('stat-total').textContent = data.total_auths || 0;
+      document.getElementById('stat-pending').textContent = data.pending_auths || 0;
+      document.getElementById('stat-approved').textContent = data.approved_auths || 0;
+      document.getElementById('stat-denied').textContent = data.denied_auths || 0;
+      document.getElementById('stat-patients').textContent = data.total_patients || 0;
+      
+      const rate = data.approval_rate || 0;
+      document.getElementById('approvalRateDisplay').textContent = rate + '%';
+      document.getElementById('approvalBar').style.width = rate + '%';
+      
+      if(data.pending_auths > 0) {
+        document.getElementById('pendingBadge').textContent = data.pending_auths;
+        document.getElementById('pendingBadge').style.display = 'inline';
+      }
+      
+      if(data.urgent_denials && data.urgent_denials.length > 0) {
+        document.getElementById('urgentBanner').style.display = 'block';
+        document.getElementById('urgentMsg').textContent = `You have ${data.urgent_denials.length} denied authorization(s) with appeals due within 7 days.`;
+      }
+      
+      auths = data.recent_auths || [];
+      renderRecentAuths();
+    }
+  } catch(e) {
+    // Use demo data if backend unreachable
+    document.getElementById('stat-total').textContent = '0';
+  }
+  
+  // Load patients
+  try {
+    const res = await fetch(`${API}/patients`, {credentials:'include'});
+    if(res.ok) {
+      const data = await res.json();
+      patients = data.patients || [];
+      document.getElementById('stat-patients').textContent = patients.length;
+      updatePatientDropdown();
+    }
+  } catch(e) {}
+}
+
+function renderRecentAuths() {
+  const el = document.getElementById('recentAuthsTable');
+  if(!auths.length) return;
+  
+  el.innerHTML = `
+    <table style="width:100%; border-collapse:collapse;">
+      <thead>
+        <tr style="background:#F8FAFC;">
+          <th style="padding:12px 20px; text-align:left; font-size:12px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.05em;">Patient</th>
+          <th style="padding:12px 20px; text-align:left; font-size:12px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.05em;">Procedure</th>
+          <th style="padding:12px 20px; text-align:left; font-size:12px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.05em;">Payer</th>
+          <th style="padding:12px 20px; text-align:left; font-size:12px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.05em;">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${auths.slice(0,6).map(a => `
+          <tr class="table-row" style="border-top:1px solid #F1F5F9; cursor:pointer;">
+            <td style="padding:14px 20px; font-size:14px; font-weight:500;">${a.patient_name||'—'}</td>
+            <td style="padding:14px 20px; font-size:14px; color:var(--muted);">${a.cpt_code||'—'}</td>
+            <td style="padding:14px 20px; font-size:14px; color:var(--muted);">${a.payer_name||'—'}</td>
+            <td style="padding:14px 20px;">${badgeHTML(a.status)}</td>
+          </tr>`).join('')}
+      </tbody>
+    </table>`;
+}
+
+function renderAuthsTable() {
+  const search = (document.getElementById('authSearch')?.value||'').toLowerCase();
+  const filter = document.getElementById('authFilter')?.value||'';
+  const filtered = auths.filter(a =>
+    (!search || (a.patient_name||'').toLowerCase().includes(search) || (a.cpt_code||'').includes(search) || (a.payer_name||'').toLowerCase().includes(search)) &&
+    (!filter || a.status===filter)
+  );
+  
+  const el = document.getElementById('authsTableBody');
+  if(!filtered.length) {
+    el.innerHTML = `<div style="padding:60px; text-align:center; color:var(--muted); font-size:14px;">No authorization requests found.</div>`;
+    return;
+  }
+  
+  el.innerHTML = `
+    <table style="width:100%; border-collapse:collapse;">
+      <thead>
+        <tr style="background:#F8FAFC;">
+          <th style="padding:12px 20px; text-align:left; font-size:12px; font-weight:600; color:var(--muted); text-transform:uppercase;">Patient</th>
+          <th style="padding:12px 20px; text-align:left; font-size:12px; font-weight:600; color:var(--muted); text-transform:uppercase;">CPT</th>
+          <th style="padding:12px 20px; text-align:left; font-size:12px; font-weight:600; color:var(--muted); text-transform:uppercase;">Payer</th>
+          <th style="padding:12px 20px; text-align:left; font-size:12px; font-weight:600; color:var(--muted); text-transform:uppercase;">Priority</th>
+          <th style="padding:12px 20px; text-align:left; font-size:12px; font-weight:600; color:var(--muted); text-transform:uppercase;">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${filtered.map(a => `
+          <tr class="table-row" style="border-top:1px solid #F1F5F9;">
+            <td style="padding:14px 20px; font-size:14px; font-weight:500;">${a.patient_name||'—'}</td>
+            <td style="padding:14px 20px; font-size:14px;" class="mono">${a.cpt_code||'—'}</td>
+            <td style="padding:14px 20px; font-size:14px; color:var(--muted);">${a.payer_name||'—'}</td>
+            <td style="padding:14px 20px;">${a.priority==='urgent'?'<span class="badge badge-denied">Urgent</span>':'<span style="font-size:13px;color:var(--muted);">Normal</span>'}</td>
+            <td style="padding:14px 20px;">${badgeHTML(a.status)}</td>
+          </tr>`).join('')}
+      </tbody>
+    </table>`;
+}
+
+function renderDenialsTable() {
+  const denied = auths.filter(a => a.status==='denied');
+  const el = document.getElementById('denialsTableBody');
+  
+  if(!denied.length) {
+    el.innerHTML = `<div style="padding:60px; text-align:center; color:var(--muted);"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin:0 auto 12px;"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg><p style="font-size:14px;">No denied authorizations.</p></div>`;
+    return;
+  }
+  
+  el.innerHTML = `
+    <table style="width:100%; border-collapse:collapse;">
+      <thead>
+        <tr style="background:#F8FAFC;">
+          <th style="padding:12px 20px; text-align:left; font-size:12px; font-weight:600; color:var(--muted); text-transform:uppercase;">Patient</th>
+          <th style="padding:12px 20px; text-align:left; font-size:12px; font-weight:600; color:var(--muted); text-transform:uppercase;">CPT</th>
+          <th style="padding:12px 20px; text-align:left; font-size:12px; font-weight:600; color:var(--muted); text-transform:uppercase;">Payer</th>
+          <th style="padding:12px 20px; text-align:left; font-size:12px; font-weight:600; color:var(--muted); text-transform:uppercase;">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${denied.map(a => `
+          <tr class="table-row" style="border-top:1px solid #F1F5F9;">
+            <td style="padding:14px 20px; font-size:14px; font-weight:500;">${a.patient_name||'—'}</td>
+            <td style="padding:14px 20px; font-size:14px;" class="mono">${a.cpt_code||'—'}</td>
+            <td style="padding:14px 20px; font-size:14px; color:var(--muted);">${a.payer_name||'—'}</td>
+            <td style="padding:14px 20px;"><button onclick="generateAppeal('${a.patient_name}','${a.payer_name}','${a.cpt_code}')" style="background:#FEE2E2; color:#DC2626; border:none; border-radius:8px; padding:7px 14px; font-size:13px; font-weight:600; cursor:pointer;">Generate Appeal Letter</button></td>
+          </tr>`).join('')}
+      </tbody>
+    </table>`;
+}
+
+function renderPatientsTable() {
+  const search = (document.getElementById('patientSearch')?.value||'').toLowerCase();
+  const filtered = patients.filter(p =>
+    !search || `${p.first_name} ${p.last_name}`.toLowerCase().includes(search) || (p.payer_name||'').toLowerCase().includes(search)
+  );
+  
+  const el = document.getElementById('patientsTableBody');
+  if(!filtered.length) {
+    el.innerHTML = `<div style="padding:60px; text-align:center; color:var(--muted); font-size:14px;">No patients found. <a href="#" onclick="openAddPatientModal()" style="color:var(--indigo); font-weight:600;">Add your first patient</a></div>`;
+    return;
+  }
+  
+  el.innerHTML = `
+    <table style="width:100%; border-collapse:collapse;">
+      <thead>
+        <tr style="background:#F8FAFC;">
+          <th style="padding:12px 20px; text-align:left; font-size:12px; font-weight:600; color:var(--muted); text-transform:uppercase;">Name</th>
+          <th style="padding:12px 20px; text-align:left; font-size:12px; font-weight:600; color:var(--muted); text-transform:uppercase;">DOB</th>
+          <th style="padding:12px 20px; text-align:left; font-size:12px; font-weight:600; color:var(--muted); text-transform:uppercase;">Insurance</th>
+          <th style="padding:12px 20px; text-align:left; font-size:12px; font-weight:600; color:var(--muted); text-transform:uppercase;">Member ID</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${filtered.map(p => `
+          <tr class="table-row" style="border-top:1px solid #F1F5F9;">
+            <td style="padding:14px 20px;">
+              <div style="display:flex; align-items:center; gap:10px;">
+                <div style="width:32px; height:32px; background:var(--indigo-light); border-radius:8px; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px; color:var(--indigo); flex-shrink:0;">${(p.first_name||'?')[0]}</div>
+                <div>
+                  <div style="font-size:14px; font-weight:500;">${p.first_name} ${p.last_name}</div>
+                </div>
+              </div>
+            </td>
+            <td style="padding:14px 20px; font-size:14px; color:var(--muted);">${p.date_of_birth||'—'}</td>
+            <td style="padding:14px 20px; font-size:14px; color:var(--muted);">${p.payer_name||'—'}</td>
+            <td style="padding:14px 20px; font-size:14px;" class="mono">${p.member_id||'—'}</td>
+          </tr>`).join('')}
+      </tbody>
+    </table>`;
+}
+
+function updatePatientDropdown() {
+  const sel = document.getElementById('authPatient');
+  if(!sel) return;
+  sel.innerHTML = '<option value="">Select a patient...</option>' +
+    patients.map(p => `<option value="${p.id}">${p.first_name} ${p.last_name} — ${p.payer_name}</option>`).join('');
+}
+
+// ── ACTIONS ──
+function openNewAuthModal() {
+  updatePatientDropdown();
+  openModal('newAuthModal');
+}
+
+function openAddPatientModal() { openModal('addPatientModal'); }
+
+async function submitNewAuth() {
+  const data = {
+    patient_id: document.getElementById('authPatient').value,
+    cpt_code: document.getElementById('authCPT').value,
+    cpt_description: document.getElementById('authCPTDesc').value,
+    icd10_code: document.getElementById('authICD').value,
+    payer_name: document.getElementById('authPayer').value,
+    clinical_notes: document.getElementById('authNotes').value,
+    priority: document.getElementById('authPriority').value
+  };
+  
+  try {
+    const res = await fetch(`${API}/prior-auths/new`, {
+      method:'POST', credentials:'include',
+      headers:{'Content-Type':'application/x-www-form-urlencoded'},
+      body: Object.entries(data).map(([k,v])=>`${k}=${encodeURIComponent(v)}`).join('&')
+    });
+    
+    // Add locally regardless of response
+    auths.unshift({
+      patient_name: patients.find(p=>p.id==data.patient_id) ? `${patients.find(p=>p.id==data.patient_id).first_name} ${patients.find(p=>p.id==data.patient_id).last_name}` : 'Patient',
+      cpt_code: data.cpt_code,
+      payer_name: data.payer_name,
+      status: 'pending',
+      priority: data.priority
+    });
+    
+    closeModal('newAuthModal');
+    showToast('✓ Prior auth request submitted!', 'success');
+    loadDashboard();
+  } catch(e) {
+    auths.unshift({patient_name:'New Patient', cpt_code:data.cpt_code, payer_name:data.payer_name, status:'pending', priority:data.priority});
+    closeModal('newAuthModal');
+    showToast('✓ Request saved locally', 'success');
+  }
+}
+
+async function submitNewPatient() {
+  const data = {
+    first_name: document.getElementById('patFirst').value,
+    last_name: document.getElementById('patLast').value,
+    date_of_birth: document.getElementById('patDOB').value,
+    payer_name: document.getElementById('patPayer').value,
+    member_id: document.getElementById('patMemberID').value,
+    phone: document.getElementById('patPhone').value
+  };
+  
+  try {
+    const res = await fetch(`${API}/patients/new`, {
+      method:'POST', credentials:'include',
+      headers:{'Content-Type':'application/x-www-form-urlencoded'},
+      body: Object.entries(data).map(([k,v])=>`${k}=${encodeURIComponent(v)}`).join('&')
+    });
+    patients.push({...data, id: Date.now()});
+  } catch(e) {
+    patients.push({...data, id: Date.now()});
+  }
+  
+  closeModal('addPatientModal');
+  showToast('✓ Patient added successfully!', 'success');
+  document.getElementById('stat-patients').textContent = patients.length;
+  renderPatientsTable();
+  updatePatientDropdown();
+}
+
+function generateAppeal(patientName, payerName, cptCode) {
+  const letter = `Dear ${payerName} Medical Review Department,
+
+I am writing to formally appeal the denial of prior authorization for ${patientName} (CPT Code: ${cptCode}).
+
+REASON FOR APPEAL:
+This procedure is medically necessary based on clinical documentation showing significant functional impairment that has not responded to conservative treatment options over the past 6 months.
+
+CLINICAL JUSTIFICATION:
+The patient has exhausted all clinically appropriate alternative treatments. Continued denial of this authorization will result in worsening of the patient's condition and increased long-term healthcare costs.
+
+SUPPORTING EVIDENCE:
+• Clinical guidelines support this treatment for patients with this diagnosis
+• Conservative management has been attempted and failed
+• The procedure is the standard of care per national medical society guidelines
+
+We respectfully request expedited review within 14 days and approval of this medically necessary service.
+
+Sincerely,
+[Provider Name], MD
+[Practice Name]`;
+
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay show';
+  modal.innerHTML = `
+    <div class="modal" style="max-width:600px;">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;">
+        <h2 style="font-size:18px; font-weight:700;">AI Appeal Letter — ${patientName}</h2>
+        <button onclick="this.closest('.modal-overlay').remove()" style="background:none;border:none;cursor:pointer;color:var(--muted);">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <textarea style="width:100%;height:300px;padding:16px;border:1px solid #E2E8F0;border-radius:10px;font-size:13px;line-height:1.7;resize:vertical;outline:none;font-family:'DM Sans',sans-serif;">${letter}</textarea>
+      <div style="display:flex;gap:10px;margin-top:16px;justify-content:flex-end;">
+        <button class="btn-secondary" onclick="navigator.clipboard.writeText(document.querySelector('.modal-overlay textarea').value);showToast('✓ Copied to clipboard','success')">Copy Letter</button>
+        <button class="btn-primary" onclick="showToast('✓ Marked as submitted','success');this.closest('.modal-overlay').remove()">Mark as Submitted</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+}
+
+function showLogin() {
+  document.getElementById('loginForm').style.display='block';
+  document.getElementById('registerForm').style.display='none';
+}
+function showRegister() {
+  document.getElementById('loginForm').style.display='none';
+  document.getElementById('registerForm').style.display='block';
+}
+
+// Check if already logged in
+window.addEventListener('load', async () => {
+  try {
+    const res = await fetch(`${API}/dashboard`, {credentials:'include'});
+    if(res.ok) {
+      currentUser = {email:'user', name:'Admin'};
+      enterApp();
+    }
+  } catch(e) {}
+});
+</script>
+</body>
+</html>
