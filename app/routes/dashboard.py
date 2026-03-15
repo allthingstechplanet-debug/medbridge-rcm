@@ -90,3 +90,24 @@ def api_patients():
 
 
 
+
+
+@dashboard_bp.route('/test-email-xyz')
+@login_required
+def test_email():
+    import smtplib
+    import os
+    try:
+        server = os.environ.get('MAIL_SERVER')
+        port = int(os.environ.get('MAIL_PORT', 587))
+        username = os.environ.get('MAIL_USERNAME')
+        password = os.environ.get('MAIL_PASSWORD')
+        
+        if not username:
+            return f"ERROR: MAIL_USERNAME not set in Railway variables"
+        if not password:
+            return f"ERROR: MAIL_PASSWORD not set in Railway variables"
+            
+        return f"Config OK - Server:{server} Port:{port} User:{username} PassLen:{len(password)}"
+    except Exception as e:
+        return f"Error: {str(e)}"
