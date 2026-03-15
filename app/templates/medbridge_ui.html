@@ -444,13 +444,8 @@ function checkPwdStrength(pw){
   el.innerHTML = pw ? `<div style="display:flex;gap:4px;margin-bottom:4px;">${bars}</div><span style="color:${colors[score]};">${labels[score]||""}</span>` : "";
 }
 
-window.addEventListener("load",async()=>{
-  // Only auto-login if we came from a previous session (not after logout)
-  if(sessionStorage.getItem("loggedOut")) {
-    sessionStorage.removeItem("loggedOut");
-    return;
-  }
-  try{const r=await fetch(API+"/api/dashboard",{credentials:"include"});if(r.ok){enterApp("","Admin");}}catch(e){}
+window.addEventListener("load",()=>{
+  // Always show login page on refresh - user must log in manually
 });
 </script>
 </body>
