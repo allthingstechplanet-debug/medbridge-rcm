@@ -2,9 +2,7 @@ import os
 from flask import Flask, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
-from flask_mail import Mail
 
-mail = Mail()
 
 db = SQLAlchemy()
 login_manager = LoginManager()
@@ -16,7 +14,7 @@ def create_app():
 
     db.init_app(app)
     login_manager.init_app(app)
-    mail.init_app(app)
+
 
     from .routes.auth import auth_bp
     from .routes.dashboard import dashboard_bp
@@ -60,13 +58,6 @@ def create_app():
     with app.app_context():
         from . import models
         db.create_all()
-
-    # Start deadline notification scheduler
-    try:
-        from app.services.scheduler import start_scheduler
-        start_scheduler(app)
-    except Exception:
-        pass
 
     return app
 
