@@ -108,16 +108,17 @@ def seed_demo():
         db.session.add(u)
         db.session.flush()
         pats = []
-        for fn,ln,payer,mid in [
-            ('Michael','Johnson','UnitedHealthcare','UHC-452189'),
-            ('Patricia','Williams','Aetna','AET-782345'),
-            ('Robert','Davis','Blue Cross','BCBS-334129'),
-            ('Jennifer','Martinez','Cigna','CIG-908723'),
-            ('William','Anderson','Medicare','MED-123456'),
-            ('Linda','Thompson','Humana','HUM-567890'),
+        for fn,ln,dob,payer,mid in [
+            ('Michael','Johnson','1965-03-15','UnitedHealthcare','UHC-452189'),
+            ('Patricia','Williams','1958-07-22','Aetna','AET-782345'),
+            ('Robert','Davis','1972-11-08','Blue Cross','BCBS-334129'),
+            ('Jennifer','Martinez','1980-04-30','Cigna','CIG-908723'),
+            ('William','Anderson','1955-09-14','Medicare','MED-123456'),
+            ('Linda','Thompson','1968-01-25','Humana','HUM-567890'),
         ]:
             pt = Patient(practice_id=p.id, first_name=fn,
-                last_name=ln, payer_name=payer, member_id=mid)
+                last_name=ln, payer_name=payer, member_id=mid,
+                date_of_birth=datetime.strptime(dob,'%Y-%m-%d').date())
             db.session.add(pt)
             pats.append(pt)
         db.session.flush()
