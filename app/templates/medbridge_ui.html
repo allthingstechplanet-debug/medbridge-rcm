@@ -311,7 +311,8 @@ function enterApp(email,name){
 async function loadData(){
   try{
     const r=await fetch(API+"/api/dashboard",{credentials:"include"});
-    if(r.ok){const d=await r.json();
+    if(r.ok){
+      const d=await r.json();
       document.getElementById("sTot").textContent=d.total_auths||0;
       document.getElementById("sPend").textContent=d.pending_auths||0;
       document.getElementById("sApp").textContent=d.approved_auths||0;
@@ -320,9 +321,12 @@ async function loadData(){
       const rt=d.approval_rate||0;
       document.getElementById("rateDisplay").textContent=rt+"%";
       document.getElementById("rateBar").style.width=rt+"%";
-      auths=d.recent_auths||[];renderRecent();loadAuths();
+      auths=d.recent_auths||[];
+      renderRecent();
     }
   }catch(e){}
+  // Always reload full auths list
+  await loadAuths();
   try{
     const r=await fetch(API+"/api/patients",{credentials:"include"});
     if(r.ok){const d=await r.json();patients=d.patients||[];document.getElementById("sPat").textContent=patients.length;updatePatSel();}
@@ -335,14 +339,30 @@ function renderRecent(){
 }
 
 async function updateStatus(idx, newStatus){
+  const authId = auths[idx].id;
   auths[idx].status = newStatus;
   document.getElementById("statusModal").remove();
-  toast("✓ Status updated to " + newStatus, "success");
-  renderAuths(); renderDenials(); renderRecent();
-  const authId = auths[idx].id;
+  
+  // Save to backend
   if(authId){
-    try{await fetch(API+"/api/prior-auths/"+authId+"/status",{method:"POST",credentials:"include",headers:{"Content-Type":"application/json"},body:JSON.stringify({status:newStatus})});}catch(e){}
+    try{
+      await fetch(API+"/api/prior-auths/"+authId+"/status",{
+        method:"POST",credentials:"include",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({status:newStatus})
+      });
+    }catch(e){}
   }
+  
+  // Reload all data from server immediately
+  await loadData();
+  
+  // Re-render all views
+  renderAuths();
+  renderDenials();
+  renderRecent();
+  
+  toast("✓ Status updated to " + newStatus, "success");
 }
 
 function openStatusModal(idx){
