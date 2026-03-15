@@ -176,10 +176,29 @@ def api_list_auths():
 @login_required
 def api_update_status(auth_id):
     from flask import request
+    from app.services.email_service import send_status_update_email
     auth = PriorAuth.query.filter_by(id=auth_id, practice_id=current_user.practice_id).first()
     if not auth:
         return jsonify({'error': 'Not found'}), 404
-    data = request.get_json()
-    auth.status = data.get('status', auth.status)
+    old_status = auth.status
+    new_status = data.get('status', auth.status) if (data := request.get_json()) else auth.status
+    auth.status = new_status
     db.session.commit()
+    
+    # Send email notification if status changed
+    if old_status != new_status:
+        try:
+            patient_name = f"{auth.patient.first_name} {auth.patient.last_name}" if auth.patient else "Patient"
+            send_status_update_email(
+                user_email=current_user.email,
+                user_name=current_user.first_name or current_user.email.split("@")[0],
+                patient_name=patient_name,
+                cpt_code=auth.cpt_code or "",
+                payer=auth.payer_name or "",
+                old_status=old_status,
+                new_status=new_status
+            )
+        except Exception as e:
+            pass  # Don't fail the request if email fails
+    
     return jsonify({'success': True})

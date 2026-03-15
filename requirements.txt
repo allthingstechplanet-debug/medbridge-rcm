@@ -11,3 +11,4 @@ stripe
 APScheduler
 psycopg2-binary
 flask-limiter
+flask-mail
