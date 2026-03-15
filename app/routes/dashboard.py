@@ -93,10 +93,12 @@ def api_patients():
 
 @dashboard_bp.route('/seed-demo-data-xyz123')
 def seed_demo():
+    from app import db
+    from app.models import Practice, User, Patient, PriorAuth
+    from datetime import datetime
     try:
-        from app.models import Practice, User
         if User.query.filter_by(email='demo@northside.com').first():
-            return 'Demo user exists! Try logging in: demo@northside.com / Demo1234!'
+            return 'Demo user exists! Login: demo@northside.com / Demo1234! <a href="/login">Go</a>'
         p = Practice(name='Demo Practice')
         db.session.add(p)
         db.session.flush()
@@ -104,8 +106,39 @@ def seed_demo():
             first_name='Sarah', last_name='Mitchell', role='admin')
         u.set_password('Demo1234!')
         db.session.add(u)
+        db.session.flush()
+        pats = []
+        for fn,ln,payer,mid in [
+            ('Michael','Johnson','UnitedHealthcare','UHC-452189'),
+            ('Patricia','Williams','Aetna','AET-782345'),
+            ('Robert','Davis','Blue Cross','BCBS-334129'),
+            ('Jennifer','Martinez','Cigna','CIG-908723'),
+            ('William','Anderson','Medicare','MED-123456'),
+            ('Linda','Thompson','Humana','HUM-567890'),
+        ]:
+            pt = Patient(practice_id=p.id, first_name=fn,
+                last_name=ln, payer_name=payer, member_id=mid)
+            db.session.add(pt)
+            pats.append(pt)
+        db.session.flush()
+        for pi,cpt,icd,status,priority in [
+            (0,'27447','M17.11','approved','normal'),
+            (1,'70553','G43.909','approved','normal'),
+            (2,'29827','M75.121','pending','urgent'),
+            (3,'27130','M16.11','pending','normal'),
+            (4,'93306','I50.9','submitted','normal'),
+            (5,'29881','M23.201','denied','normal'),
+            (0,'22612','M51.16','pending','urgent'),
+            (1,'20610','M17.31','denied','normal'),
+        ]:
+            a = PriorAuth(practice_id=p.id,
+                patient_id=pats[pi].id,
+                cpt_code=cpt, icd10_code=icd,
+                payer_name=pats[pi].payer_name,
+                status=status, priority=priority)
+            db.session.add(a)
         db.session.commit()
-        return 'Done! Login: demo@northside.com / Demo1234! <a href="/login">Login</a>'
+        return '<h2>✅ Done!</h2><p>Email: demo@northside.com</p><p>Password: Demo1234!</p><a href="/login">Login now</a>'
     except Exception as e:
         db.session.rollback()
         return 'Error: ' + str(e)
