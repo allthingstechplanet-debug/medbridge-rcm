@@ -92,22 +92,28 @@ def api_patients():
 
 
 
+
 @dashboard_bp.route('/test-email-xyz')
 @login_required
 def test_email():
-    import smtplib
-    import os
+    import smtplib, os
+    from email.mime.text import MIMEText
+    from email.mime.multipart import MIMEMultipart
     try:
         server = os.environ.get('MAIL_SERVER')
         port = int(os.environ.get('MAIL_PORT', 587))
         username = os.environ.get('MAIL_USERNAME')
         password = os.environ.get('MAIL_PASSWORD')
-        
-        if not username:
-            return f"ERROR: MAIL_USERNAME not set in Railway variables"
-        if not password:
-            return f"ERROR: MAIL_PASSWORD not set in Railway variables"
-            
-        return f"Config OK - Server:{server} Port:{port} User:{username} PassLen:{len(password)}"
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = 'MedBridge RCM - Test Email'
+        msg['From'] = username
+        msg['To'] = username
+        msg.attach(MIMEText('<h2>MedBridge email works!</h2>', 'html'))
+        with smtplib.SMTP(server, port, timeout=10) as smtp:
+            smtp.ehlo()
+            smtp.starttls()
+            smtp.login(username, password)
+            smtp.sendmail(username, username, msg.as_string())
+        return 'SUCCESS: Test email sent to ' + username
     except Exception as e:
-        return f"Error: {str(e)}"
+        return 'FAILED: ' + str(e)
