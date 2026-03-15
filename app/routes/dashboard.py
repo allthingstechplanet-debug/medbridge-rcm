@@ -90,58 +90,22 @@ def api_patients():
 
 
 
+
 @dashboard_bp.route('/seed-demo-data-xyz123')
 def seed_demo():
-    from app.models import Patient, PriorAuth, Practice, User
-    from datetime import datetime
     try:
-        if Practice.query.filter_by(name='Northside Orthopedics').first():
-            return "Demo already exists! Login: demo@northside.com / Demo1234! <a href='/login'>Go to login</a>"
-        
-        practice = Practice(name='Northside Orthopedics')
-        db.session.add(practice)
+        from app.models import Practice, User
+        if User.query.filter_by(email='demo@northside.com').first():
+            return 'Demo user exists! Try logging in: demo@northside.com / Demo1234!'
+        p = Practice(name='Demo Practice')
+        db.session.add(p)
         db.session.flush()
-        
-        user = User(email='demo@northside.com', practice_id=practice.id,
+        u = User(email='demo@northside.com', practice_id=p.id,
             first_name='Sarah', last_name='Mitchell', role='admin')
-        user.set_password('Demo1234!')
-        db.session.add(user)
-        db.session.flush()
-        
-        pats = []
-        for fn,ln,dob,payer,mid in [
-            ('Michael','Johnson','1965-03-15','UnitedHealthcare','UHC-452189'),
-            ('Patricia','Williams','1958-07-22','Aetna','AET-782345'),
-            ('Robert','Davis','1972-11-08','Blue Cross','BCBS-334129'),
-            ('Jennifer','Martinez','1980-04-30','Cigna','CIG-908723'),
-            ('William','Anderson','1955-09-14','Medicare','MED-123456'),
-            ('Linda','Thompson','1968-01-25','Humana','HUM-567890'),
-        ]:
-            p = Patient(practice_id=practice.id, first_name=fn, last_name=ln,
-                payer_name=payer, member_id=mid)
-            db.session.add(p)
-            pats.append(p)
-        db.session.flush()
-        
-        for pi,cpt,icd,status,priority in [
-            (0,'27447','M17.11','approved','normal'),
-            (1,'70553','G43.909','approved','normal'),
-            (2,'29827','M75.121','pending','urgent'),
-            (3,'27130','M16.11','pending','normal'),
-            (4,'93306','I50.9','submitted','normal'),
-            (5,'29881','M23.201','denied','normal'),
-            (0,'22612','M51.16','pending','urgent'),
-            (1,'20610','M17.31','denied','normal'),
-        ]:
-            a = PriorAuth(practice_id=practice.id,
-                patient_id=pats[pi].id,
-                cpt_code=cpt, icd10_code=icd,
-                payer_name=pats[pi].payer_name,
-                status=status, priority=priority)
-            db.session.add(a)
-        
+        u.set_password('Demo1234!')
+        db.session.add(u)
         db.session.commit()
-        return "<h2>✅ Demo data created!</h2><p>Email: demo@northside.com</p><p>Password: Demo1234!</p><a href='/login'>Login now</a>"
+        return 'Done! Login: demo@northside.com / Demo1234! <a href="/login">Login</a>'
     except Exception as e:
         db.session.rollback()
-        return f"Error: {str(e)}"
+        return 'Error: ' + str(e)
