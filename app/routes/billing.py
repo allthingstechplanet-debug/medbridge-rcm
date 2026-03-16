@@ -12,18 +12,20 @@ def create_checkout():
         import stripe
         stripe.api_key = os.environ.get('STRIPE_SECRET_KEY')
         price_id = os.environ.get('STRIPE_PRICE_ID')
-        
+
         if not stripe.api_key:
-            return jsonify({'error': 'Stripe not configured'}), 400
-            
+            return jsonify({'error': 'Stripe secret key not set in Railway variables'}), 400
+        if not price_id:
+            return jsonify({'error': 'Stripe price ID not set in Railway variables'}), 400
+
         checkout_session = stripe.checkout.Session.create(
             customer_email=current_user.email,
             payment_method_types=['card'],
             line_items=[{'price': price_id, 'quantity': 1}],
             mode='subscription',
-            success_url=request.host_url + 'billing/success?session_id={CHECKOUT_SESSION_ID}',
-            cancel_url=request.host_url + 'login',
-            metadata={'practice_id': current_user.practice_id}
+            success_url='https://medbridge-rcm-production.up.railway.app/billing/success?session_id={CHECKOUT_SESSION_ID}',
+            cancel_url='https://medbridge-rcm-production.up.railway.app/login',
+            metadata={'practice_id': str(current_user.practice_id)}
         )
         return jsonify({'url': checkout_session.url})
     except Exception as e:
