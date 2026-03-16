@@ -198,6 +198,60 @@ tr:hover td { background:#F8FAFC; }
     </div>
 
     <!-- PATIENTS -->
+
+    <!-- BILLING VIEW -->
+    <div id="view-billing" style="display:none;">
+      <div style="margin-bottom:28px;">
+        <h1 style="font-size:26px;font-weight:700;margin-bottom:4px;">Billing & Subscription</h1>
+        <p style="color:#64748B;font-size:14px;">Manage your MedBridge RCM subscription</p>
+      </div>
+      <div style="background:white;border-radius:16px;border:1px solid #E2E8F0;padding:28px;margin-bottom:24px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <div>
+            <div style="font-size:13px;font-weight:600;color:#64748B;text-transform:uppercase;margin-bottom:6px;">Current Plan</div>
+            <div id="currentPlan" style="font-size:24px;font-weight:700;">Free Trial</div>
+            <div style="color:#64748B;font-size:14px;margin-top:4px;">Upgrade to unlock all features</div>
+          </div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;">
+        <div style="background:white;border-radius:16px;border:1px solid #E2E8F0;padding:28px;">
+          <div style="font-size:13px;font-weight:700;color:#64748B;margin-bottom:8px;">STARTER</div>
+          <div style="font-size:36px;font-weight:700;margin-bottom:4px;">$299<span style="font-size:16px;color:#64748B;">/mo</span></div>
+          <div style="color:#64748B;font-size:13px;margin-bottom:20px;">Perfect for small practices</div>
+          <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:24px;">
+            <div style="font-size:13px;">✓ Up to 100 prior auths/month</div>
+            <div style="font-size:13px;">✓ AI appeal letter generator</div>
+            <div style="font-size:13px;">✓ Email notifications</div>
+          </div>
+          <button onclick="startCheckout()" class="btn btn-primary" style="width:100%;padding:12px;">Get Started — $299/mo</button>
+        </div>
+        <div style="background:linear-gradient(135deg,#4F46E5,#0D9488);border-radius:16px;padding:28px;position:relative;">
+          <div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:#F59E0B;color:white;font-size:11px;font-weight:700;padding:4px 12px;border-radius:999px;">MOST POPULAR</div>
+          <div style="font-size:13px;font-weight:700;color:rgba(255,255,255,0.7);margin-bottom:8px;">GROWTH</div>
+          <div style="font-size:36px;font-weight:700;color:white;margin-bottom:4px;">$799<span style="font-size:16px;color:rgba(255,255,255,0.7);">/mo</span></div>
+          <div style="color:rgba(255,255,255,0.7);font-size:13px;margin-bottom:20px;">For growing practices</div>
+          <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:24px;">
+            <div style="font-size:13px;color:white;">✓ Unlimited prior auths</div>
+            <div style="font-size:13px;color:white;">✓ Everything in Starter</div>
+            <div style="font-size:13px;color:white;">✓ Analytics dashboard</div>
+          </div>
+          <button onclick="startCheckout()" style="width:100%;padding:12px;background:white;color:#4F46E5;border:none;border-radius:10px;font-weight:700;cursor:pointer;">Get Started — $799/mo</button>
+        </div>
+        <div style="background:white;border-radius:16px;border:1px solid #E2E8F0;padding:28px;">
+          <div style="font-size:13px;font-weight:700;color:#64748B;margin-bottom:8px;">ENTERPRISE</div>
+          <div style="font-size:36px;font-weight:700;margin-bottom:4px;">Custom</div>
+          <div style="color:#64748B;font-size:13px;margin-bottom:20px;">For large organizations</div>
+          <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:24px;">
+            <div style="font-size:13px;">✓ Everything in Growth</div>
+            <div style="font-size:13px;">✓ EHR integrations</div>
+            <div style="font-size:13px;">✓ Dedicated support</div>
+          </div>
+          <button onclick="contactSales()" class="btn btn-secondary" style="width:100%;padding:12px;">Contact Sales</button>
+        </div>
+      </div>
+    </div>
+
     <div id="view-patients" style="display:none;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;">
         <div><h1 style="font-size:26px;font-weight:700;margin-bottom:4px;">Patients</h1><p style="color:#64748B;font-size:14px;">Manage patient records</p></div>
